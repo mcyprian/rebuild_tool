@@ -12,6 +12,7 @@ class PackageGraph(object):
         self.G = nx.MultiDiGraph()
         self.ord_num = 0
         self.processed_packages = set()
+        self.built_packages = set()
 
     def add_package(self, name):
         '''
@@ -60,10 +61,11 @@ class PackageGraph(object):
         nx.draw_networkx_labels(self.G, pos, labels = node_labels)
         plt.show()
      
-    def process_deps(self, package):
+    def process_deps(self, package, recursive=True):
         '''
-        Recursive function, calls itself for all dependancies of package, if
-        package was not processed before.
+        Adds edge between package and each of its dependancies, if 
+        pacakge was not processes before. When recursive is True
+        calls itself for each dependance.
         '''
         if package in self.processed_packages:
             return
@@ -73,8 +75,45 @@ class PackageGraph(object):
             self.processed_packages.add(package)
             for dep in get_deps(package):
                 self.add_edge(package, dep)
-                self.process_deps(dep)
+                if not recursive:
+                    deps_of_deps = get_deps(dep)
+                    for dep_of_dep in deps_of_deps:
+                        self.add_edge(dep, dep_of_dep)
+                if recursive:
+                    self.process_deps(dep)
 
+    def to_packages(self, nodes):
+        '''
+        Converts list of nodes number to list of packages names
+        '''
+        nodes_attr = nx.get_node_attributes(self.G, 'name')
+        return [nodes_attr[x] for x in nodes] 
+
+    def plan_building_order(self):
+        self.to_build = {}
+        circular_deps = []
+        for node, data in self.G.nodes_iter(data=True):
+            print("node {} data {}".format(node, data))
+        for node in self.G.nodes():
+            self.G[node]['deps'] = set(self.G.successors(node))
+            if set(self.G.successors(node)) & set(self.G.predecessors(node)):
+                circular_deps.append(node)
+            else:
+                update_dict(self.to_build, len(self.G.successors(node)), node)
+        print("\nTo build:")
+        for num in sorted(self.to_build.keys()):
+            print("deps {}   {}".format(num, self.to_packages(self.to_build[num])))
+        print("circular dependancy: {}".format(self.to_packages(circular_deps)))
+    
+    def build_packages(self):
+        for node in self.G.nodes():
+            print("{}   {}", node, self.G[node]['deps'])
+
+def update_dict(dictionary, key, value):
+    if key in dictionary.keys():
+        dictionary[key].append(value)
+    else:
+        dictionary[key] = [value]
 
 def get_deps(package):
     '''
@@ -118,9 +157,10 @@ def deps_filter(deps_list):
 def main(packages):
     G = PackageGraph()
     for package in packages:
-        G.process_deps(package)
-
-    G.show_graph()
+        G.process_deps(package, False)
+    G.plan_building_order()
+    G.build_packages()
+   # G.show_graph()
 
 if __name__ == '__main__':
     main()

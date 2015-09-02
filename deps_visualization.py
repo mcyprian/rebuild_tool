@@ -14,18 +14,32 @@ class PackageGraph(object):
         self.processed_packages = set()
 
     def add_package(self, name):
+        '''
+        Checks if node with label name already exists, if not adds new
+        node and retutns its number
+        '''
+        exists = self.find_package(name)
+        if exists:
+            return exists
         self.G.add_node(self.ord_num)
         self.G.node[self.ord_num]['name'] = name
         self.ord_num += 1
         return self.ord_num - 1
     
-    def find_package(self, package):
+    def find_package(self, name):
+        '''
+        Search for package with label given as argument name
+        '''
         for node, data in self.G.nodes_iter(data=True):
-            if data['name'] == package:
+            if data['name'] == name:
                 return node
         return None
 
     def add_edge(self, from_package, to_package):
+        '''
+        Adds new edge, if some of packages doesn't exists
+        creates it.
+        '''
         p1 = self.find_package(from_package)
         p2 = self.find_package(to_package)
         if p1 == None:
@@ -35,6 +49,9 @@ class PackageGraph(object):
         self.G.add_edge(p1, p2)
 
     def show_graph(self):
+        '''
+        Draws nodes, edges, labels and shows graph
+        '''
         pos = nx.circular_layout(self.G)
         node_labels = nx.get_node_attributes(self.G, 'name')
         nx.set_node_attributes(self.G, 'pos', pos)
@@ -44,6 +61,10 @@ class PackageGraph(object):
         plt.show()
      
     def process_deps(self, package):
+        '''
+        Recursive function, calls itself for all dependancies of package, if
+        package was not processed before.
+        '''
         if package in self.processed_packages:
             return
         else:
@@ -56,11 +77,19 @@ class PackageGraph(object):
 
 
 def get_deps(package):
+    '''
+    Returns all dependancies of the package
+    '''
     proc = Popen(["dnf", "repoquery", "--requires", package], stdout=PIPE)
     stream_data = proc.communicate()
     return deps_filter(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:])
 
 def base_name(name):
+    '''
+    Removes version and parentheses from package name if present
+    foo >= 1.0  >>>  foo
+    foo(64bit)  >>>  foo
+    '''
     if '(' in name:
         name = name.split('(')[0]
     if '>' in name:
@@ -68,6 +97,9 @@ def base_name(name):
     return name
 
 def deps_filter(deps_list):
+    '''
+    Removes libraries and other unwanted files from dependancies
+    '''
     rules = ['^lib', '^rtld', '^/bin', '^/sbin', '^/usr', '^glibc']
     true_deps = set()
     for name in deps_list:

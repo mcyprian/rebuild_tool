@@ -20,7 +20,7 @@ class PackageGraph(object):
         '''
         self.G.add_node(name)
     
-    def add_edge(self, from_package, to_package):
+    def add_dep(self, from_package, to_package):
         '''
         Adds new edge, if some of packages doesn't exists
         creates it.
@@ -45,32 +45,59 @@ class PackageGraph(object):
         if package in self.processed_packages:
             return
         else:
-            print(package)
-            print(self.processed_packages)
             self.processed_packages.add(package)
             for dep in get_deps(package):
-                self.add_edge(package, dep)
+                self.add_dep(package, dep)
                 if not recursive:
                     deps_of_deps = get_deps(dep)
                     for dep_of_dep in deps_of_deps:
-                        self.add_edge(dep, dep_of_dep)
+                        self.add_dep(dep, dep_of_dep)
                 if recursive:
                     self.process_deps(dep)
 
     def plan_building_order(self):
-        self.to_build = {}
-        circular_deps = []
+        self.num_of_deps = {}
+        self.circular_deps = set()
         for node in self.G.nodes():
             if set(self.G.successors(node)) & set(self.G.predecessors(node)):
-                circular_deps.append(node)
+                self.circular_deps.add(node)
             else:
-                update_dict(self.to_build, len(self.G.successors(node)), node)
+                update_dict(self.num_of_deps, len(self.G.successors(node)), node)
 
         print("\nTo build:")
-        for num in sorted(self.to_build.keys()):
-            print("deps {}   {}".format(num, self.to_build[num]))
-        print("circular dependancy: {}".format(circular_deps))
+        for num in sorted(self.num_of_deps.keys()):
+            print("deps {}   {}".format(num, self.num_of_deps[num]))
+        print("circular dependancy: {}".format(self.circular_deps))
     
+    def run_building(self):
+        '''
+        Simulate building of packages in right order
+        '''
+        for package in self.num_of_deps[0]:      # First we build package with no deps
+            self.build(package)
+        all_packages = set()
+        for node in self.G.nodes():
+            all_packages.add(node)
+
+        packages_to_build =  all_packages - self.circular_deps
+        while packages_to_build != self.built_packages:
+            for num in sorted(self.num_of_deps.keys())[1:]:
+                for package in self.num_of_deps[num]:
+                    if package not in self.built_packages and self.deps_satisfied(package):
+                        self.build(package)
+
+    def deps_satisfied(self, package):
+        '''
+        Compares package deps with self.build_packages to
+        check if are all dependancies already built
+        '''
+        if set(self.G.successors(package)) <= self.built_packages:
+            return True
+        return False
+
+    def build(self, package):
+        print("Building package {}.... DONE".format(package))
+        self.built_packages.add(package)
 
 
 def update_dict(dictionary, key, value):
@@ -123,6 +150,7 @@ def main(packages):
     for package in packages:
         Graph.process_deps(package, False)
     Graph.plan_building_order()
+    Graph.run_building()
     Graph.show_graph()
 
 if __name__ == '__main__':

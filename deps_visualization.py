@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import click
 import locale
 import re
-from subprocess import Popen, PIPE, DEVNULL
-
+from subprocess import Popen, PIPE
 
 class PackageGraph(object):
     def __init__(self):
@@ -45,13 +44,11 @@ class PackageGraph(object):
         if package in self.processed_packages:
             return
         else:
+            print(package)
+            self.add_package(package)
             self.processed_packages.add(package)
             for dep in get_deps(package):
                 self.add_dep(package, dep)
-                if not recursive:
-                    deps_of_deps = get_deps(dep)
-                    for dep_of_dep in deps_of_deps:
-                        self.add_dep(dep, dep_of_dep)
                 if recursive:
                     self.process_deps(dep)
 
@@ -91,7 +88,7 @@ class PackageGraph(object):
         Compares package deps with self.build_packages to
         check if are all dependancies already built
         '''
-        if set(self.G.successors(package)) <= self.built_packages:
+        if (set(self.G.successors(package)) - self.circular_deps) <= self.built_packages:
             return True
         return False
 
@@ -110,8 +107,11 @@ def get_deps(package):
     '''
     Returns all dependancies of the package
     '''
-    proc = Popen(["dnf", "repoquery", "--requires", package], stdout=PIPE)
+    proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*",
+        "--enablerepo=rawhide-source", "--requires", package], stdout=PIPE)
     stream_data = proc.communicate()
+    if package == 'python-pip' or 'python-setuptools':
+        print(deps_filter(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:]))
     return deps_filter(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:])
 
 def base_name(name):

@@ -13,24 +13,14 @@ class PackageGraph(object):
         self.processed_packages = set()
         self.built_packages = set()
 
-    def add_package(self, name):
-        '''
-        Adds new node to graph
-        '''
-        self.G.add_node(name)
-    
-    def add_dep(self, from_package, to_package):
-        '''
-        Adds new edge, if some of packages doesn't exists
-        creates it.
-        '''
-        self.G.add_edge(from_package, to_package)
-
     def show_graph(self):
         '''
         Draws nodes, edges, labels and shows graph
         '''
-        pos = nx.circular_layout(self.G)
+        try: 
+            pos = nx.graphviz_layout(self.G)
+        except (ImportError, AttributeError):
+            pos = nx.circular_layout(self.G)
         nx.set_node_attributes(self.G, 'pos', pos)
         nx.draw(self.G, pos, node_size=10000, with_labels=True, node_color="#CDE0F0")
         plt.show()
@@ -45,10 +35,10 @@ class PackageGraph(object):
             return
         else:
             print(package)
-            self.add_package(package)
+            self.G.add_node(package)
             self.processed_packages.add(package)
             for dep in get_deps(package):
-                self.add_dep(package, dep)
+                self.G.add_edge(package, dep)
                 if recursive:
                     self.process_deps(dep)
 
@@ -70,6 +60,9 @@ class PackageGraph(object):
         '''
         Simulate building of packages in right order
         '''
+        if not self.num_of_deps:
+            print("Nothing to build")
+            return
         for package in self.num_of_deps[0]:      # First we build package with no deps
             self.build(package)
         all_packages = set()
@@ -89,7 +82,7 @@ class PackageGraph(object):
         check if are all dependancies already built
         '''
         if (set(self.G.successors(package)) - self.circular_deps) <= self.built_packages:
-            return True
+            return True         # TODO resolve circular deps
         return False
 
     def build(self, package):
@@ -110,9 +103,7 @@ def get_deps(package):
     proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*",
         "--enablerepo=rawhide-source", "--requires", package], stdout=PIPE)
     stream_data = proc.communicate()
-    if package == 'python-pip' or 'python-setuptools':
-        print(deps_filter(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:]))
-    return deps_filter(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:])
+    return stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:]
 
 def base_name(name):
     '''
@@ -125,22 +116,6 @@ def base_name(name):
     if '>' in name:
         name = name.split('>')[0]
     return name
-
-def deps_filter(deps_list):
-    '''
-    Removes libraries and other unwanted files from dependancies
-    '''
-    rules = ['^lib', '^rtld', '^/bin', '^/sbin', '^/usr', '^glibc']
-    true_deps = set()
-    for name in deps_list:
-        name = base_name(name)
-        search = False
-        for rule in rules:
-            if re.search(rule, name):
-                search = True
-        if not search:
-            true_deps.add(name)
-    return list(true_deps)
 
 @click.command()
 @click.argument('packages', nargs=-1)

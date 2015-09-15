@@ -1,7 +1,7 @@
 ===================
 sclbuilder
 ===================
-Tool to plan order of packages building in Software Collections
+Tool to plan order of packages building in Software Collections creation.
 
 Finds all dependancies of the  packages, prints order of building and makes visualization of the relations between them.
 

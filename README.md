@@ -1,10 +1,18 @@
 ===================
-deps_visualization
+sclbuilder
 ===================
-Tool to make visualization of all package dependancies and dependancies of dependancies.
+Tool to plan order of packages building in Software Collections
 
-Recursively finds all related packages and makes visualization of the relations.
+Finds all dependancies of the  packages, prints order of building and makes visualization of the relations between them.
 
 ## Usage
 
-    deps_visualization package1 package2 package3 ... packageN
+    Usage: mybin.py [OPTIONS] [PACKAGES]...
+
+    Options:
+      -r REPO                 Repo to search dependancies of the Packages
+                              (default: "rawhide-source")
+      --visual / --no-visual  Enable / disable visualization of relations
+                              between pacakges
+      -h, --help              Show this message and exit.
+

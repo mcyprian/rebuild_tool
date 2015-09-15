@@ -1,14 +1,14 @@
-#!/usr/bin/python3
-
 import networkx as nx
 import matplotlib.pyplot as plt
-import click
 import locale
-import re
 from subprocess import Popen, PIPE
 
+import sclbuilder.settings
+from sclbuilder.exceptions import UnknownRepoException
+
 class PackageGraph(object):
-    def __init__(self):
+    def __init__(self, repo):
+        self.repo = repo
         self.G = nx.MultiDiGraph()
         self.processed_packages = set()
         self.built_packages = set()
@@ -37,12 +37,17 @@ class PackageGraph(object):
             print(package)
             self.G.add_node(package)
             self.processed_packages.add(package)
-            for dep in get_deps(package):
+            for dep in get_deps(package, self.repo):
                 self.G.add_edge(package, dep)
                 if recursive:
                     self.process_deps(dep)
 
     def plan_building_order(self):
+        '''
+        creates dictionary of packages , keys of the dictionaty are
+        numbers of dependancies, values are names of the packages, 
+        packages with circular dependancies are stored in special set
+        '''
         self.num_of_deps = {}
         self.circular_deps = set()
         for node in self.G.nodes():
@@ -58,7 +63,8 @@ class PackageGraph(object):
     
     def run_building(self):
         '''
-        Simulate building of packages in right order
+        Simulate building of packages in right order, first builds all packages with no deps, 
+        than iterate over others and builds packages which have satisfied all their deps
         '''
         if not self.num_of_deps:
             print("Nothing to build")
@@ -96,13 +102,17 @@ def update_dict(dictionary, key, value):
     else:
         dictionary[key] = [value]
 
-def get_deps(package):
+def get_deps(package, repo):
     '''
-    Returns all dependancies of the package
+    Returns all dependancies of the package found in selected repo
     '''
-    proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*",
-        "--enablerepo=rawhide-source", "--requires", package], stdout=PIPE)
+    proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*", 
+        "--enablerepo=" + repo, "--requires", package], stdout=PIPE, stderr=PIPE)
     stream_data = proc.communicate()
+    if proc.returncode:
+        if stream_data[1].decode(locale.getpreferredencoding()) ==\
+                "Error: Unknown repo: '{0}'\n".format(repo):
+                    raise UnknownRepoException('Repository {} is probably disabled'.format(repo))
     return stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:]
 
 def base_name(name):
@@ -116,17 +126,3 @@ def base_name(name):
     if '>' in name:
         name = name.split('>')[0]
     return name
-
-@click.command()
-@click.argument('packages', nargs=-1)
-
-def main(packages):
-    Graph = PackageGraph()
-    for package in packages:
-        Graph.process_deps(package, False)
-    Graph.plan_building_order()
-    Graph.run_building()
-    Graph.show_graph()
-
-if __name__ == '__main__':
-    main()

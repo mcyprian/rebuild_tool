@@ -1,0 +1,2 @@
+class UnknownRepoException(BaseException):
+    pass

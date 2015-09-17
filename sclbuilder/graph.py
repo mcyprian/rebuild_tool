@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import locale
+import itertools
 from subprocess import Popen, PIPE
 
 from sclbuilder.exceptions import UnknownRepoException
@@ -20,6 +21,7 @@ class PackageGraph(object):
         Process all the packages, finds their dependancies and makes graph of
         relations
         '''
+        print("Processing package:")
         for package in self.packages:
             self.process_deps(package)
 
@@ -61,16 +63,20 @@ class PackageGraph(object):
         for node in self.graph.nodes():
             circular = set(self.graph.successors(node)) & set(self.graph.predecessors(node))
             if circular:
-                new_set = circular | {node}
-                if not new_set in self.circular_deps:
-                    self.circular_deps.append(new_set)
+                self.circular_deps.append(circular | {node})
             else:
                 update_dict(self.num_of_deps, len(self.graph.successors(node)), node)
+        
+        for a, b in itertools.combinations(self.circular_deps, 2):
+            if a <= b:
+                self.circular_deps.remove(a)
+            elif b <= a:
+                self.circular_deps.remove(b)
 
-        print("\nTo build:")
+        print("\nPackages to build:")
         for num in sorted(self.num_of_deps.keys()):
             print("deps {}   {}".format(num, self.num_of_deps[num]))
-        print("circular dependancy: {}".format(self.circular_deps))
+        print("\nCircular dependancy: {}\n".format(self.circular_deps))
 
     def run_building(self):
         '''

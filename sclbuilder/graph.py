@@ -13,7 +13,7 @@ class PackageGraph(object):
         self.processed_packages = set()
         self.built_packages = set()
         self.num_of_deps = {}
-        self.circular_deps = set()
+        self.circular_deps = []
 
     def make_graph(self):
         '''
@@ -59,8 +59,11 @@ class PackageGraph(object):
         packages with circular dependancies are stored in special set
         '''
         for node in self.graph.nodes():
-            if set(self.graph.successors(node)) & set(self.graph.predecessors(node)):
-                self.circular_deps.add(node)
+            circular = set(self.graph.successors(node)) & set(self.graph.predecessors(node))
+            if circular:
+                new_set = circular | {node}
+                if not new_set in self.circular_deps:
+                    self.circular_deps.append(new_set)
             else:
                 update_dict(self.num_of_deps, len(self.graph.successors(node)), node)
 
@@ -87,7 +90,10 @@ class PackageGraph(object):
             for package in self.num_of_deps[0]:      # First we build package with no deps
                 self.build(package)
 
-        packages_to_build = all_packages - self.circular_deps
+        self.all_circular_deps = set()
+        for circle in self.circular_deps:
+            self.all_circular_deps |= circle
+        packages_to_build = all_packages - self.all_circular_deps   # circular deps
         while packages_to_build != self.built_packages:
             for num in sorted(self.num_of_deps.keys()):
                 if num == 0:
@@ -117,8 +123,7 @@ class PackageGraph(object):
         Compares package deps with self.build_packages to
         check if are all dependancies already built
         '''
-        print((set(self.graph.successors(package)) - self.circular_deps) <= self.built_packages)
-        if (set(self.graph.successors(package)) - self.circular_deps) <= self.built_packages:
+        if (set(self.graph.successors(package)) - self.all_circular_deps) <= self.built_packages:
             return True         # TODO resolve circular deps
         return False
 

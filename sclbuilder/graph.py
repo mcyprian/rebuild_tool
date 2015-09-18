@@ -61,17 +61,16 @@ class PackageGraph(object):
         packages with circular dependancies are stored in special set
         '''
         for node in self.graph.nodes():
-            circular = set(self.graph.successors(node)) & set(self.graph.predecessors(node))
-            if circular:
-                self.circular_deps.append(circular | {node})
-            else:
-                update_dict(self.num_of_deps, len(self.graph.successors(node)), node)
+            update_dict(self.num_of_deps, len(self.graph.successors(node)), node)
         
+        self.circular_deps = [set(x) for x in nx.simple_cycles(self.graph)]
+        print(self.circular_deps)
+
         for a, b in itertools.combinations(self.circular_deps, 2):
             if a <= b:
-                self.circular_deps.remove(a)
+                remove_if_present(self.circular_deps, a)
             elif b <= a:
-                self.circular_deps.remove(b)
+                remove_if_present(self.circular_deps, b)
 
         print("\nPackages to build:")
         for num in sorted(self.num_of_deps.keys()):
@@ -93,19 +92,21 @@ class PackageGraph(object):
             all_packages.add(node)
         
         if 0 in self.num_of_deps.keys():
-            for package in self.num_of_deps[0]:      # First we build package with no deps
+            for package in self.num_of_deps[0]:      # First we build packages without deps
                 self.build(package)
 
         self.all_circular_deps = set()
         for circle in self.circular_deps:
             self.all_circular_deps |= circle
-        packages_to_build = all_packages - self.all_circular_deps   # circular deps
-        while packages_to_build != self.built_packages:
+        packages_to_build = all_packages - self.all_circular_deps   # TODO circular deps
+        while packages_to_build > self.built_packages:
             for num in sorted(self.num_of_deps.keys()):
                 if num == 0:
                     continue
                 for package in self.num_of_deps[num]:
-                    if package not in self.built_packages and self.deps_satisfied(package):
+                    if package not in self.built_packages |\
+                        self.all_circular_deps and\
+                        self.deps_satisfied(package):
                        self.build(package)
 
     def get_deps(self, package):
@@ -137,6 +138,10 @@ class PackageGraph(object):
         print("Building package {}.... DONE".format(package))
         self.built_packages.add(package)
 
+
+def remove_if_present(ls, value):
+    if value in ls:
+        ls.remove(value)
 
 def update_dict(dictionary, key, value):
     if key in dictionary.keys():

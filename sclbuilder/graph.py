@@ -10,7 +10,7 @@ class PackageGraph(object):
     def __init__(self, packages, repo):
         self.packages = packages
         self.repo = repo
-        self.graph = nx.MultiDiGraph()
+        self.graph = nx.DiGraph()
         self.processed_packages = set()
         self.built_packages = set()
         self.num_of_deps = {}
@@ -34,7 +34,8 @@ class PackageGraph(object):
         except (ImportError, AttributeError):
             pos = nx.circular_layout(self.graph)
         nx.set_node_attributes(self.graph, 'pos', pos)
-        nx.draw(self.graph, pos, node_size=10000, with_labels=True, node_color="#CDE0F0")
+        nx.draw(self.graph, pos, node_size=12000, with_labels=True,
+                node_color="#1F9EDE", alpha=0.9)
         plt.show()
 
     def process_deps(self, package, recursive=False):

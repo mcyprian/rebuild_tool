@@ -1,0 +1,7 @@
+- ['python', 'with_rewheel 0']
+- ['python-setuptools', 'with_rewheel 0']
+- ['python-pip', 'with_rewheel 0']
+- ['python-wheel']
+- ['python-setuptools', 'with_rewheel 1']
+- ['python-pip', 'with_rewheel 1']
+- ['python', 'with_rewheel 1']

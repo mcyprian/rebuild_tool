@@ -4,10 +4,15 @@ import locale
 import itertools
 from subprocess import Popen, PIPE
 
-from sclbuilder.exceptions import UnknownRepoException
+from sclbuilder.recipe import Recipe
+from sclbuilder.exceptions import UnknownRepoException, MissingRecipeException
 
-class PackageGraph(object):
-    def __init__(self, packages, repo):
+class PackageGraph(object):             #TODO RecipePackageGraph subclass??
+    '''
+    Class to make graph of packages, analyse dependancies and
+    plan building order
+    '''
+    def __init__(self, packages, repo, recipe_files):
         self.packages = packages
         self.repo = repo
         self.graph = nx.DiGraph()
@@ -15,11 +20,19 @@ class PackageGraph(object):
         self.built_packages = set()
         self.num_of_deps = {}
         self.circular_deps = []
+        if recipe_files:
+            self.recipes = []
+            try:
+                for recipe in recipe_files:
+                    self.recipes.append(Recipe(recipe))
+            except IOError:
+                print("Failed to load recipe {0}.".format(recipe))
+
 
     def make_graph(self):
         '''
-        Process all the packages, finds their dependancies and makes graph of
-        relations
+        Process all the packages, finds theirs dependancies and makes 
+        graph of relations
         '''
         print("Processing package:")
         for package in self.packages:
@@ -27,7 +40,7 @@ class PackageGraph(object):
 
     def show_graph(self):
         '''
-        Draws nodes, edges, labels and shows graph
+        Draws nodes, edges, labels and shows the graph
         '''
         try:
             pos = nx.graphviz_layout(self.graph)
@@ -57,16 +70,21 @@ class PackageGraph(object):
 
     def plan_building_order(self):
         '''
-        creates dictionary of packages , keys of the dictionaty are
+        Creates dictionary of packages , keys of the dictionaty are
         numbers of dependancies, values are names of the packages,
         packages with circular dependancies are stored in special set
         '''
         for node in self.graph.nodes():
-            update_dict(self.num_of_deps, len(self.graph.successors(node)), node)
+            update_key(self.num_of_deps, len(self.graph.successors(node)), node)
         
         self.circular_deps = [set(x) for x in nx.simple_cycles(self.graph)]
         print(self.circular_deps)
 
+        self.all_circular_deps = set()
+        for circle in self.circular_deps:
+            self.all_circular_deps |= circle
+
+        # Removes subsets of other sets in self.circular_deps
         for a, b in itertools.combinations(self.circular_deps, 2):
             if a <= b:
                 remove_if_present(self.circular_deps, a)
@@ -80,35 +98,39 @@ class PackageGraph(object):
 
     def run_building(self):
         '''
-        Simulate building of packages in right order, first builds all packages
-        with no deps,
-        than iterate over others and builds packages which have satisfied all their deps
+        First builds all packages without deps, then iterates over num_of_deps
+        and simulate building of packages in right order
         '''
         if not self.num_of_deps:
             print("Nothing to build")
             return
         
-        all_packages = set()
-        for node in self.graph.nodes():
-            all_packages.add(node)
-        
+        # Builds all packages without deps
         if 0 in self.num_of_deps.keys():
-            for package in self.num_of_deps[0]:      # First we build packages without deps
+            for package in self.num_of_deps[0]:
                 self.build(package)
 
-        self.all_circular_deps = set()
-        for circle in self.circular_deps:
-            self.all_circular_deps |= circle
-        packages_to_build = all_packages - self.all_circular_deps   # TODO circular deps
-        while packages_to_build > self.built_packages:
+        while self.packages > self.built_packages:
             for num in sorted(self.num_of_deps.keys()):
                 if num == 0:
                     continue
                 for package in self.num_of_deps[num]:
-                    if package not in self.built_packages |\
-                        self.all_circular_deps and\
-                        self.deps_satisfied(package):
-                       self.build(package)
+                    if package in self.built_packages:
+                        continue
+                    if hasattr(self, 'recipes'):
+                        if package in self.all_circular_deps:
+                            self.build_following_recipe(self.find_recipe(package))
+                        elif self.deps_satisfied(package):
+                            self.build(package)
+    
+    def find_recipe(self, package):
+        '''
+        Search for recipe including package in self.recipes
+        '''
+        for recipe in self.recipes:
+            if package in recipe.packages:
+                return recipe
+        raise MissingRecipeException("Recipe for package {0} not found".format(package))
 
     def get_deps(self, package):
         '''
@@ -131,20 +153,31 @@ class PackageGraph(object):
         Compares package deps with self.build_packages to
         check if are all dependancies already built
         '''
-        if (set(self.graph.successors(package)) - self.all_circular_deps) <= self.built_packages:
-            return True         # TODO resolve circular deps
+        if set(self.graph.successors(package)) <= self.built_packages:
+            return True
         return False
 
     def build(self, package):
-        print("Building package {}.... DONE".format(package))
+        print("Building package {0}".format(package))
         self.built_packages.add(package)
 
+    def build_following_recipe(self, recipe):
+        '''
+        Builds packages in order and variables values discribed in given
+        recipe
+        '''
+        for step in recipe.order:
+            if len(step) == 1:
+                print("Building package {0}".format(step[0]))
+            else:
+                print("Building package {0} {1}".format(step[0], step[1])) 
+            self.built_packages.add(step[0])
 
 def remove_if_present(ls, value):
     if value in ls:
         ls.remove(value)
 
-def update_dict(dictionary, key, value):
+def update_key(dictionary, key, value):
     if key in dictionary.keys():
         dictionary[key].append(value)
     else:
@@ -152,9 +185,9 @@ def update_dict(dictionary, key, value):
 
 def base_name(name):
     '''
-    Removes version and parentheses from package name if present
-    foo >= 1.0  >>>  foo
-    foo(64bit)  >>>  foo
+    Removes version and parentheses from package name
+    foo >= 1.0  >>  foo
+    foo(64bit)  >>  foo
     '''
     if '(' in name:
         name = name.split('(')[0]

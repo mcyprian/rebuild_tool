@@ -1,0 +1,6 @@
+- ['rh-python34-python-jinja2', 'with_docs 0']
+- ['rh-python34-python-nose', 'with_docs 0']
+- ['rh-python34-python-pygments']
+- ['rh-python34-python-sphinx']
+- ['rh-python34-python-nose', 'with_docs 1']
+- ['rh-python34-python-jinja2', 'with_docs 1']

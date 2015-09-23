@@ -1,8 +1,8 @@
 import sys
 import click
 
+from sclbuilder import graph
 from sclbuilder import settings
-from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import get_file_data
 from sclbuilder.exceptions import UnknownRepoException
 
@@ -21,7 +21,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               settings.DEFAULT_REPO),
               default=settings.DEFAULT_REPO,
               metavar='REPO')
-click.option('--recipes',
+@click.option('--recipes',
              help='File carrying recipes of circular dependancy packages building',
              default=None,
              metavar='FILE')
@@ -39,7 +39,10 @@ def main(visual, recipes, r, f, packages):
         print('No such file or directory: {}'.format(f))
         sys.exit(1)
 
-    pg = PackageGraph(set(packages), r, recipe_files)
+    if recipes:
+        pg = graph.PackageRecipesGraph(set(packages), r, recipe_files)
+    else:
+        pg = graph.PackageGraph(set(packages), r)
     try:
         pg.make_graph()
     except UnknownRepoException:

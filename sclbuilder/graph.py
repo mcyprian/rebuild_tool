@@ -5,14 +5,14 @@ import itertools
 from subprocess import Popen, PIPE
 
 from sclbuilder.recipe import Recipe
-from sclbuilder.exceptions import UnknownRepoException, MissingRecipeException
+import sclbuilder.exceptions as ex
 
-class PackageGraph(object):             #TODO RecipePackageGraph subclass??
+class PackageGraph(object):
     '''
     Class to make graph of packages, analyse dependancies and
     plan building order
     '''
-    def __init__(self, packages, repo, recipe_files):
+    def __init__(self, packages, repo):
         self.packages = packages
         self.repo = repo
         self.graph = nx.DiGraph()
@@ -20,14 +20,6 @@ class PackageGraph(object):             #TODO RecipePackageGraph subclass??
         self.built_packages = set()
         self.num_of_deps = {}
         self.circular_deps = []
-        if recipe_files:
-            self.recipes = []
-            try:
-                for recipe in recipe_files:
-                    self.recipes.append(Recipe(recipe))
-            except IOError:
-                print("Failed to load recipe {0}.".format(recipe))
-
 
     def make_graph(self):
         '''
@@ -68,9 +60,94 @@ class PackageGraph(object):             #TODO RecipePackageGraph subclass??
                 if recursive:
                     self.process_deps(dep)
 
+    def get_deps(self, package):
+        '''
+        Returns all dependancies of the package found in selected repo
+        '''
+        proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*",
+                      "--enablerepo=" + self.repo, "--requires", package], stdout=PIPE, stderr=PIPE)
+        stream_data = proc.communicate()
+        if proc.returncode:
+            if stream_data[1].decode(locale.getpreferredencoding()) ==\
+                "Error: Unknown repo: '{0}'\n".format(self.repo):
+                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
+        all_deps = set(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:])
+        return all_deps & self.packages
+
+
     def plan_building_order(self):
         '''
         Creates dictionary of packages , keys of the dictionaty are
+        numbers of dependancies, values are names of the packages,
+        packages with circular dependancies are stored in special set
+        '''
+        for node in self.graph.nodes():
+            update_key(self.num_of_deps, len(self.graph.successors(node)), node)
+        
+        self.circular_deps = [set(x) for x in nx.simple_cycles(self.graph)]
+        if self.circular_deps:
+            raise ex.CircularDepsException("Can't resolve circular dependencies without recipes")
+
+        print("\nPackages to build:")
+        for num in sorted(self.num_of_deps.keys()):
+            print("deps {}   {}".format(num, self.num_of_deps[num]))
+
+    def run_building(self):
+        '''
+        First builds all packages without deps, then iterates over num_of_deps
+        and simulate building of packages in right order
+        '''
+        if not self.num_of_deps:
+            print("Nothing to build")
+            return
+        
+        # Builds all packages without deps
+        if 0 in self.num_of_deps.keys():
+            for package in self.num_of_deps[0]:
+                self.build(package)
+
+        while self.packages > self.built_packages:
+            self.num_of_deps_iter()
+            
+    def num_of_deps_iter(self):
+        for num in sorted(self.num_of_deps.keys()):
+            if num == 0:
+                continue
+            for package in self.num_of_deps[num]:
+                if package not in self.built_packages and self.deps_satisfied(package):
+                    self.build(package)
+    
+    def deps_satisfied(self, package):
+        '''
+        Compares package deps with self.build_packages to
+        check if are all dependancies already built
+        '''
+        if set(self.graph.successors(package)) <= self.built_packages:
+            return True
+        return False
+
+    def build(self, package):
+        print("Building package {0}".format(package))
+        self.built_packages.add(package)
+
+
+class PackageRecipesGraph(PackageGraph):
+    '''
+    Package graph using recipes to resolve circular dependency
+    build order
+    '''
+    def __init__(self, packages, repo, recipe_files):
+        super(self.__class__, self).__init__(packages, repo)
+        self.recipes = []
+        try:
+            for recipe in recipe_files:
+                self.recipes.append(Recipe(recipe))
+        except IOError:
+            print("Failed to load recipe {0}.".format(recipe))
+
+    def plan_building_order(self):
+        '''
+        Creates dictionary of packages, keys of the dictionaty are
         numbers of dependancies, values are names of the packages,
         packages with circular dependancies are stored in special set
         '''
@@ -96,33 +173,18 @@ class PackageGraph(object):             #TODO RecipePackageGraph subclass??
             print("deps {}   {}".format(num, self.num_of_deps[num]))
         print("\nCircular dependancy: {}\n".format(self.circular_deps))
 
-    def run_building(self):
-        '''
-        First builds all packages without deps, then iterates over num_of_deps
-        and simulate building of packages in right order
-        '''
-        if not self.num_of_deps:
-            print("Nothing to build")
-            return
-        
-        # Builds all packages without deps
-        if 0 in self.num_of_deps.keys():
-            for package in self.num_of_deps[0]:
-                self.build(package)
-
-        while self.packages > self.built_packages:
-            for num in sorted(self.num_of_deps.keys()):
-                if num == 0:
+    def num_of_deps_iter(self): 
+       for num in sorted(self.num_of_deps.keys()):
+            if num == 0:
+                continue
+            for package in self.num_of_deps[num]:
+                if package in self.built_packages:
                     continue
-                for package in self.num_of_deps[num]:
-                    if package in self.built_packages:
-                        continue
-                    if hasattr(self, 'recipes'):
-                        if package in self.all_circular_deps:
-                            self.build_following_recipe(self.find_recipe(package))
-                        elif self.deps_satisfied(package):
-                            self.build(package)
-    
+                if package in self.all_circular_deps:
+                    self.build_following_recipe(self.find_recipe(package))
+                elif self.deps_satisfied(package):
+                   self.build(package)
+ 
     def find_recipe(self, package):
         '''
         Search for recipe including package in self.recipes
@@ -130,37 +192,9 @@ class PackageGraph(object):             #TODO RecipePackageGraph subclass??
         for recipe in self.recipes:
             if package in recipe.packages:
                 return recipe
-        raise MissingRecipeException("Recipe for package {0} not found".format(package))
+        raise ex.MissingRecipeException("Recipe for package {0} not found".format(package))
 
-    def get_deps(self, package):
-        '''
-        Returns all dependancies of the package found in selected repo
-        '''
-        proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*",
-                      "--enablerepo=" + self.repo, "--requires", package], stdout=PIPE, stderr=PIPE)
-        stream_data = proc.communicate()
-        if proc.returncode:
-            if stream_data[1].decode(locale.getpreferredencoding()) ==\
-                "Error: Unknown repo: '{0}'\n".format(self.repo):
-                raise UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
-        all_deps = set(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:])
-        return all_deps & self.packages
-
-
-
-    def deps_satisfied(self, package):
-        '''
-        Compares package deps with self.build_packages to
-        check if are all dependancies already built
-        '''
-        if set(self.graph.successors(package)) <= self.built_packages:
-            return True
-        return False
-
-    def build(self, package):
-        print("Building package {0}".format(package))
-        self.built_packages.add(package)
-
+    
     def build_following_recipe(self, recipe):
         '''
         Builds packages in order and variables values discribed in given
@@ -172,6 +206,7 @@ class PackageGraph(object):             #TODO RecipePackageGraph subclass??
             else:
                 print("Building package {0} {1}".format(step[0], step[1])) 
             self.built_packages.add(step[0])
+
 
 def remove_if_present(ls, value):
     if value in ls:

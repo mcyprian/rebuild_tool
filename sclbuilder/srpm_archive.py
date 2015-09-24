@@ -3,13 +3,8 @@ import glob
 from subprocess import Popen, PIPE, CalledProcessError
 
 import sclbuilder.exceptions as ex
+from sclbuilder.utils import subprocess_popen_call
 
-def subprocess_popen_call(command=[]):
-    proc = Popen(command, stdout=PIPE, stderr=PIPE)
-    stream_data = proc.communicate()
-    stdout_str = stream_data[0].decode(locale.getpreferredencoding())
-    stderr_str = stream_data[1].decode(locale.getpreferredencoding())
-    return {'returncode' : proc.returncode, 'stdout' : stdout_str, 'stderr' : stderr_str}
 
 class SrpmArchive(object):
     '''

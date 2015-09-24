@@ -1,10 +1,9 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import locale
 import itertools
-from subprocess import Popen, PIPE
 
 from sclbuilder.recipe import Recipe
+from sclbuilder.utils import subprocess_popen_call
 import sclbuilder.exceptions as ex
 
 class PackageGraph(object):
@@ -64,14 +63,12 @@ class PackageGraph(object):
         '''
         Returns all dependancies of the package found in selected repo
         '''
-        proc = Popen(["dnf", "repoquery", "--arch=src", "--disablerepo=*",
-                      "--enablerepo=" + self.repo, "--requires", package], stdout=PIPE, stderr=PIPE)
-        stream_data = proc.communicate()
-        if proc.returncode:
-            if stream_data[1].decode(locale.getpreferredencoding()) ==\
-                "Error: Unknown repo: '{0}'\n".format(self.repo):
+        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src", 
+            "--disablerepo=*", "--enablerepo=" + self.repo, "--requires", package])
+        if proc_data['returncode']:
+            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
                 raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
-        all_deps = set(stream_data[0].decode(locale.getpreferredencoding()).splitlines()[1:])
+        all_deps = set(proc_data['stdout'].splitlines()[1:])
         return all_deps & self.packages
 
 

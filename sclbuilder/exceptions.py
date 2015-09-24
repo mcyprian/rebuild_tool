@@ -6,3 +6,9 @@ class CircularDepsException(BaseException):
 
 class MissingRecipeException(BaseException):
     pass
+
+class DownloadFailException(BaseException):
+    pass
+
+class SrpmNotFoundException(BaseException):
+    pass

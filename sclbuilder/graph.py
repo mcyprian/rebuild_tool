@@ -171,7 +171,7 @@ class PackageRecipesGraph(PackageGraph):
         print("\nPackages to build:")
         for num in sorted(self.num_of_deps.keys()):
             print("deps {}   {}".format(num, self.num_of_deps[num]))
-        print("\nCircular dependancy: {}\n".format(self.circular_deps))
+        print("\nCircular dependancies: {}\n".format(self.circular_deps))
 
     def num_of_deps_iter(self): 
        for num in sorted(self.num_of_deps.keys()):

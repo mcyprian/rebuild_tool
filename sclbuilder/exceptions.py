@@ -9,6 +9,3 @@ class MissingRecipeException(BaseException):
 
 class DownloadFailException(BaseException):
     pass
-
-class SrpmNotFoundException(BaseException):
-    pass

@@ -1,7 +1,7 @@
 import sys
 import click
 
-from sclbuilder import graph
+from sclbuilder.builder import CoprBuilder
 from sclbuilder import settings
 from sclbuilder.recipe import get_file_data
 from sclbuilder.exceptions import UnknownRepoException
@@ -38,17 +38,14 @@ def main(visual, recipes, r, f, packages):
     except IOError:
         print('No such file or directory: {}'.format(f))
         sys.exit(1)
-
-    if recipes:
-        pg = graph.PackageRecipesGraph(set(packages), r, recipe_files)
-    else:
-        pg = graph.PackageGraph(set(packages), r)
+    
+    
+    builder = CoprBuilder(r, set(packages), recipe_files)
     try:
-        pg.make_graph()
+        builder.get_relations()
     except UnknownRepoException:
         print('Repository {} is probably disabled'.format(r))
         sys.exit(1)
-    pg.plan_building_order()
-    pg.run_building()
+    builder.run_building()
     if visual:
-        pg.show_graph()
+        builder.graph.show()

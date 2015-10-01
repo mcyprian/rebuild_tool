@@ -1,7 +1,7 @@
 import locale
 import os
 
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, CalledProcessError
 
 def add_prefix(name, prefix):   #TODO remove prefix functions??
     if prefix in name:
@@ -37,3 +37,25 @@ class change_dir(object):
 
     def __exit__(self, type, value, traceback): #TODO handle exception
         os.chdir(self.primary_path)
+
+def edit_bootstrap(spec_file, macro, new_value):
+    '''
+    Sets edit_bootstrap macro macro to new_value in spec_file
+    '''
+    proc_data = subprocess_popen_call(["sed", '-i', '-e','s/{0} [0-9]/{0} {1}/g'.format(
+        macro, new_value), spec_file])
+    if proc_data['returncode']:
+        raise CalledProcessError(cmd='sed', returncode=proc_data['returncode'])
+    #TODO log message
+
+def base_name(name):
+    ''' 
+    Removes version and parentheses from package name
+    foo >= 1.0  >>  foo
+    foo(64bit)  >>  foo
+    '''
+    if '(' in name:
+        name = name.split('(')[0]
+    if '>' in name:
+        name = name.split('>')[0]
+    return name

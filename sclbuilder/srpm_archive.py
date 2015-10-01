@@ -43,7 +43,6 @@ class SrpmArchive(object):
             raise ex.DownloadFailException(proc_data['stderr'])
 
         self.srpm_name = self.get_file('.src.rpm')
-        print(self.srpm_name)
         
         
     def unpack(self):
@@ -59,7 +58,6 @@ class SrpmArchive(object):
             if p2.returncode:
                 raise CalledProcessError(cmd='rpm2cpio' ,returncode=p2.returncode)
             self.spec_file = self.get_file('.spec')
-            print(self.spec_file)
 
     def get_file(self, suffix):
         '''

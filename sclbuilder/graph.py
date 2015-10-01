@@ -10,12 +10,11 @@ class PackageGraph(object):
     Class to make graph of packages, analyse dependancies and
     plan building order
     '''
-    def __init__(self, repo, packages, built_packages):
+    def __init__(self, repo, packages):
         self.repo = repo
         self.packages = packages
         self.processed_packages = set()
-        self.built_packages = built_packages
-        self.graph = nx.DiGraph()
+        self.G = nx.DiGraph()
 
     def make_graph(self):
         '''
@@ -36,10 +35,10 @@ class PackageGraph(object):
             return
         else:
             print(package)
-            self.graph.add_node(package)
+            self.G.add_node(package)
             self.processed_packages.add(package)
             for dep in self.get_deps(package):
-                self.graph.add_edge(package, dep)
+                self.G.add_edge(package, dep)
                 if recursive:
                     self.process_deps(dep)
 
@@ -55,15 +54,6 @@ class PackageGraph(object):
         all_deps = set(proc_data['stdout'].splitlines()[1:])
         return all_deps & self.packages
 
-    def deps_satisfied(self, package):
-        '''
-        Compares package deps with self.build_packages to
-        check if are all dependancies already built
-        '''
-        if set(self.graph.successors(package)) <= self.built_packages:
-            return True
-        return False
-
     def analyse(self):
         '''
         Creates dictionary of packages, keys of the dictionaty are
@@ -71,10 +61,10 @@ class PackageGraph(object):
         packages with circular dependancies are stored in special set
         '''
         num_of_deps = {}
-        for node in self.graph.nodes():
-            update_key(num_of_deps, len(self.graph.successors(node)), node)
+        for node in self.G.nodes():
+            update_key(num_of_deps, len(self.G.successors(node)), node)
         
-        circular_deps = [set(x) for x in nx.simple_cycles(self.graph)]
+        circular_deps = [set(x) for x in nx.simple_cycles(self.G)]
         print(circular_deps)
 
         # Removes subsets of other sets in circular_deps
@@ -95,11 +85,11 @@ class PackageGraph(object):
         Draws nodes, edges, labels and shows the graph
         '''
         try:
-            pos = nx.graphviz_layout(self.graph)
+            pos = nx.graphviz_layout(self.G)
         except (ImportError, AttributeError):
-            pos = nx.circular_layout(self.graph)
-        nx.set_node_attributes(self.graph, 'pos', pos)
-        nx.draw(self.graph, pos, node_size=12000, with_labels=True,
+            pos = nx.circular_layout(self.G)
+        nx.set_node_attributes(self.G, 'pos', pos)
+        nx.draw(self.G, pos, node_size=12000, with_labels=True,
                 node_color="#1F9EDE", alpha=0.9)
         plt.show()
 

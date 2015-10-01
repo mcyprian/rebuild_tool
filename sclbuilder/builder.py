@@ -9,7 +9,7 @@ class CoprBuilder(object):
     def __init__(self, repo, packages, recipe_files = None):
         self.packages = packages
         self.built_packages = set()
-        self.graph = PackageGraph(repo, self.packages, self.built_packages)
+        self.graph = PackageGraph(repo, self.packages)
         self.num_of_deps = {}
         self.circular_deps = []
         self.all_circular_deps  = set()
@@ -65,9 +65,17 @@ class CoprBuilder(object):
                     continue
                 if package in self.all_circular_deps:
                     self.build_following_recipe(self.find_recipe(package))
-                elif self.graph.deps_satisfied(package):
+                elif self.deps_satisfied(package):
                    self.build(package)
 
+    def deps_satisfied(self, package):
+        '''
+        Compares package deps with self.build_packages to
+        check if are all dependancies already built
+        '''
+        if set(self.graph.G.successors(package)) <= self.built_packages:
+            return True
+        return False
 
     def run_building(self):
         '''

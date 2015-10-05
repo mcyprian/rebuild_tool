@@ -8,7 +8,7 @@ rh-python34-python-jinja2
 rh-python34-python-markupsafe
 rh-python34-python-nose
 rh-python34-python-pip
-rh-python34-python-psycopg
+rh-python34-python-psycopg2
 rh-python34-python-pygments
 rh-python34-python-pymongo
 rh-python34-python-setuptools

@@ -35,12 +35,14 @@ def main(visual, recipes, r, f, packages):
             packages = get_file_data(f, split=True)
         if recipes:
             recipe_files = get_file_data(recipes, split=True)
+        else:
+            recipe_files = None
     except IOError:
         print('No such file or directory: {}'.format(f))
         sys.exit(1)
     
     
-    builder = CoprBuilder(r, set(packages), recipe_files)
+    builder = CoprBuilder('/tmp/', r, set(packages), recipe_files)
     try:
         builder.get_relations()
     except UnknownRepoException:

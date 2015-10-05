@@ -27,7 +27,7 @@ class SrpmArchive(object):
             self._temp_dir = path
         else:
             self._temp_dir = path + '/'
-
+    
     def download(self):
         '''
         Download srpm of package from selected repo.
@@ -70,4 +70,7 @@ class SrpmArchive(object):
                 + '*' + suffix))
         else:
             return name[0][len(self.temp_dir):]
-
+    
+    def get(self):
+        self.download()
+        self.unpack()

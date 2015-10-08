@@ -1,5 +1,6 @@
 import sys
 import click
+from copr.client.exceptions import CoprNoConfException
 
 from sclbuilder.builder import CoprBuilder
 from sclbuilder import settings
@@ -41,12 +42,14 @@ def main(visual, recipes, r, f, packages):
         print('No such file or directory: {}'.format(f))
         sys.exit(1)
     
-    
-    builder = CoprBuilder('/tmp/', r, set(packages), recipe_files)
     try:
+        builder = CoprBuilder('/tmp/', r, set(packages), recipe_files=recipe_files)
         builder.get_relations()
     except UnknownRepoException:
         print('Repository {} is probably disabled'.format(r))
+        sys.exit(1)
+    except CoprNoConfException:
+        print('Copr configuration file: ~/.config/copr not found')
         sys.exit(1)
     builder.run_building()
     if visual:

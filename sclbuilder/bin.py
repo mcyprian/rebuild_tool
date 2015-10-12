@@ -43,7 +43,7 @@ def main(visual, recipes, r, f, packages):
         sys.exit(1)
     
     try:
-        builder = CoprBuilder('/tmp/', r, set(packages), recipe_files=recipe_files)
+        builder = CoprBuilder(r, set(packages), recipe_files=recipe_files)
         builder.get_relations()
     except UnknownRepoException:
         print('Repository {} is probably disabled'.format(r))

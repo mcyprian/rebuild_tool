@@ -1,6 +1,8 @@
 import os
 import re
 import time
+import tempfile
+import shutil
 from abc import ABCMeta
 from subprocess import CalledProcessError
 from copr.client import CoprClient
@@ -16,11 +18,11 @@ class Builder(object): # metaclass=ABCMeta python3
     '''
     Abstract superclass of builder classes.
     '''
-    def __init__(self, path, repo, packages, recipe_files = None):
+    def __init__(self, repo, packages, recipe_files = None):
         self.packages = packages
         self.repo = repo
         self.rpm_dict = {}
-        self.path = path
+        self.path = tempfile.mkdtemp()
         self.built_packages = set()
         self.built_rpms = set()
         self.graph = PackageGraph(repo, self.packages, self.rpm_dict)
@@ -31,6 +33,9 @@ class Builder(object): # metaclass=ABCMeta python3
             self.recipes = recipe_files
         except IOError:
             print("Failed to load recipe {0}.".format(recipe))
+
+    def __del__(self):
+        shutil.rmtree(self.path)
 
     @property
     def path(self):
@@ -68,32 +73,34 @@ class Builder(object): # metaclass=ABCMeta python3
             self.all_circular_deps |= circle
 
 
-    def num_of_deps_iter(self):            # TODO rewrite as iterators
+    def build_ord_gen(self):
         '''
         Iterates over num_of_deps and build package that have all deps
         satisfied
         '''
-        for num in sorted(self.num_of_deps.keys()):
-            if num == 0:
-                continue
-            for package in self.num_of_deps[num]:
-                if package not in self.built_packages and self.deps_satisfied(package):
-                    self.build(package)
+        while self.packages > self.built_packages:
+            for num in sorted(self.num_of_deps.keys()):
+                if num == 0:
+                    continue
+                for package in self.num_of_deps[num]:
+                    if package not in self.built_packages and self.deps_satisfied(package):
+                        yield (package, False)
 
-    def num_of_deps_recipe_iter(self):
+    def build_ord_recipe_gen(self):
         '''
         Iterates over num_of_deps, building circular_deps using recipes
         '''
-        for num in sorted(self.num_of_deps.keys()):
-            if num == 0:
-                continue
-            for package in self.num_of_deps[num]:
-                if package in self.built_packages:
+        while self.packages > self.built_packages:
+            for num in sorted(self.num_of_deps.keys()):
+                if num == 0:
                     continue
-                if package in self.all_circular_deps:
-                    self.build_following_recipe(self.find_recipe(package))
-                elif self.deps_satisfied(package):
-                   self.build(package)
+                for package in self.num_of_deps[num]:
+                    if package in self.built_packages:
+                        continue
+                    if package in self.all_circular_deps:
+                        yield (package, True)
+                    elif self.deps_satisfied(package):
+                       yield (package, False)
 
     def deps_satisfied(self, package):
         '''
@@ -104,12 +111,13 @@ class Builder(object): # metaclass=ABCMeta python3
             return True
         return False
  
-    def build(self, package):
+    def build(self, package, verbose=True):
         self.built_packages.add(package)
         self.built_rpms |= set(self.rpm_dict[package])
-        print("Building {0}...".format(package))
+        if verbose:
+            print("Building {0}...".format(package))
 
-    def run_building(self):                      # TODO threading flags?
+    def run_building(self):  # TODO build metapackage, threading flags?
         '''
         First builds all packages without deps, then iterates over num_of_deps
         and simulate building of packages in right order
@@ -124,12 +132,15 @@ class Builder(object): # metaclass=ABCMeta python3
                 self.build(package)
 
         if self.recipes:
-            iter_fce = self.num_of_deps_recipe_iter
+            build_ord_generator = self.build_ord_recipe_gen
         else:
-            iter_fce = self.num_of_deps_iter
+            build_ord_generator = self.build_ord_gen
 
-        while self.packages > self.built_packages:
-            iter_fce()
+        for pkg, recipe in build_ord_generator():
+            if recipe:
+                self.build_following_recipe(self.find_recipe(pkg))
+            else:
+                self.build(pkg)
 
     def find_recipe(self, package):
         '''
@@ -142,8 +153,8 @@ class Builder(object): # metaclass=ABCMeta python3
     
     def build_following_recipe(self, recipe):
         '''
-        Builds packages in order and variables values discribed in given
-        recipe
+        Builds packages in order and macro values discribed in given
+        recipe.
         '''
         for step in recipe.order:
             if len(step) == 1:
@@ -154,16 +165,16 @@ class Builder(object): # metaclass=ABCMeta python3
                 edit_bootstrap(self.pkg_files[step[0]].spec_file, macro, value)
                 self.pkg_files[step[0]].pack()
             self.build(step[0], False)
-        time.sleep(240)
+        #time.sleep(600)
 
 
 class CoprBuilder(Builder):
     '''
     Contians methods to rebuild packages in Copr
     '''
-    def __init__(self, path, repo, packages, project=settings.DEFAULT_COPR, 
+    def __init__(self, repo, packages, project=settings.DEFAULT_COPR, 
             recipe_files=None):
-        super(self.__class__, self).__init__(path, repo, packages, recipe_files)
+        super(self.__class__, self).__init__(repo, packages, recipe_files)
         self.cl = CoprClient.create_from_file_config()
         self.pkg_files = {}
         self.make_rpm_dict()
@@ -191,14 +202,14 @@ class CoprBuilder(Builder):
         for package in self.packages:
             self.rpm_dict[package] = get_rpms(self.pkg_files[package].spec_file)
 
-    def build(self, package, verbose=True):
-        if verbose:
-            print("Building {}".format(package))
-        result = self.cl.create_new_build(self.project,
-                pkgs=[self.pkg_files[package].srpm_file])
-        self.built_packages.add(package)
-        self.built_rpms |= set(self.rpm_dict[package])
-        time.sleep(240)
+#    def build(self, package, verbose=True):
+#        if verbose:
+#            print("Building {}".format(package))
+#        result = self.cl.create_new_build(self.project,
+#                pkgs=[self.pkg_files[package].srpm_file])
+#        self.built_packages.add(package)
+#        self.built_rpms |= set(self.rpm_dict[package])
+#        time.sleep(240)
  
 
 def get_rpms(spec_file):

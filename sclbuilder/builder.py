@@ -12,9 +12,9 @@ from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import Recipe
 from sclbuilder.srpm_archive import SrpmArchive
 from sclbuilder.utils import change_dir, subprocess_popen_call, edit_bootstrap
-from sclbuilder.exceptions import MissingRecipeException
+from sclbuilder.exceptions import MissingRecipeException, BuildFailureException
 
-class Builder(object): # metaclass=ABCMeta python3
+class Builder(metaclass=ABCMeta):
     '''
     Abstract superclass of builder classes.
     '''
@@ -165,14 +165,13 @@ class Builder(object): # metaclass=ABCMeta python3
                 edit_bootstrap(self.pkg_files[step[0]].spec_file, macro, value)
                 self.pkg_files[step[0]].pack()
             self.build(step[0], False)
-        #time.sleep(600)
 
 
 class CoprBuilder(Builder):
     '''
     Contians methods to rebuild packages in Copr
     '''
-    def __init__(self, repo, packages, project=settings.DEFAULT_COPR, 
+    def __init__(self, repo, packages, project=settings.DEFAULT_COPR_PROJECT, 
             recipe_files=None):
         super(self.__class__, self).__init__(repo, packages, recipe_files)
         self.cl = CoprClient.create_from_file_config()
@@ -202,14 +201,27 @@ class CoprBuilder(Builder):
         for package in self.packages:
             self.rpm_dict[package] = get_rpms(self.pkg_files[package].spec_file)
 
-#    def build(self, package, verbose=True):
-#        if verbose:
-#            print("Building {}".format(package))
-#        result = self.cl.create_new_build(self.project,
-#                pkgs=[self.pkg_files[package].srpm_file])
-#        self.built_packages.add(package)
-#        self.built_rpms |= set(self.rpm_dict[package])
-#        time.sleep(240)
+    def build(self, package, verbose=True):
+        '''
+        Building package using copr api, periodicaly checking
+        build status while build is not finished
+        '''
+        if verbose:
+            print("Building {}".format(package))
+        result = self.cl.create_new_build(self.project,
+                pkgs=[self.pkg_files[package].srpm_file])
+        
+        while True:
+            status = result.builds_list[0].handle.get_build_details().status
+            if status in ["skipped", "failed", "succeeded"]:
+                break
+            time.sleep(10)
+        if status == 'succeeded':
+            self.built_packages.add(package)
+            self.built_rpms |= set(self.rpm_dict[package])
+        else:
+            raise BuildFailureException("Failed to build package {}, status {}".format(
+            package, status))
  
 
 def get_rpms(spec_file):

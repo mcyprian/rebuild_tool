@@ -9,3 +9,6 @@ class MissingRecipeException(BaseException):
 
 class DownloadFailException(BaseException):
     pass
+
+class BuildFailureException(BaseException):
+    pass

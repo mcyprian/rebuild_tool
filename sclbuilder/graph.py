@@ -54,7 +54,7 @@ class PackageGraph(object):
         Returns all dependancies of the package found in selected repo
         '''
         proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src", 
-            "--disablerepo=*", "--enablerepo=" + self.repo, "--requires", package])
+            "--enablerepo=" + self.repo, "--requires", package])
         if proc_data['returncode']:
             if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
                 raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
@@ -94,6 +94,7 @@ class PackageGraph(object):
         for package in self.packages:
             if rpm in self.rpm_dict[package]:
                 return package
+        print("NOT FOUND {}".format(rpm)) # TODO Handle exception if package not found
     
     def show(self):
         '''

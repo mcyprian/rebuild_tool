@@ -89,6 +89,7 @@ class SrpmArchive(object):
                          '--define', '_builddir {0}'.format(save_dir),
                          '--define', '_srcrpmdir {0}'.format(save_dir),
                          '--define', '_rpmdir {0}'.format(save_dir),
+                         '--define', 'scl_prefix rh-python34-',
                          '-bs', self.spec_file], stdout=PIPE, 
                          stderr=PIPE).communicate()[0].strip()
         except OSError:

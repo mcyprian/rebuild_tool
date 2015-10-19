@@ -45,9 +45,9 @@ class SrpmArchive(object):
     def srpm_file(self, name):
         self.__srpm_file = name
 
-    def download(self):
+    def dnf_download(self):
         '''
-        Download srpm of package from selected repo.
+        Download srpm of package from selected repo using dnf.
         '''
         proc_data = subprocess_popen_call(["dnf", "download", "--disablerepo=*", 
             "--enablerepo=" + self.repo, "--destdir",  self.temp_dir,
@@ -61,7 +61,20 @@ class SrpmArchive(object):
 
         self.srpm_file = self.get_file('.src.rpm')
         
+    def koji_download(self):
+        '''
+        Download srpm of package from selected repo using koji.
+        '''
+        with change_dir(self.temp_dir):
+            proc_data = subprocess_popen_call(["koji", "download-build",
+                "--arch=src", "--lastestfrom=" + self.repo, self.package])
+            if proc_data['stderr']:
+                raise ex.DownloadFailException(proc_data['stderr'])
         
+        self.srpm_file = self.get_file(".src.rpm")
+      
+        # koji download-build --arch=src --latestfrom=f24-python3 python3
+
     def unpack(self):
         '''
         Unpacks srpm archive
@@ -110,6 +123,9 @@ class SrpmArchive(object):
         else:
             return name[0][len(self.temp_dir):]
     
-    def get(self):
-        self.download()
+    def get(self, src="dnf"):
+        if src == "dnf":
+            self.dnf_download()
+        elif src == "koji":
+            self.koji_download()
         self.unpack()

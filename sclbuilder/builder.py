@@ -6,6 +6,7 @@ import shutil
 from abc import ABCMeta
 from subprocess import CalledProcessError
 from copr.client import CoprClient
+from copr.client.exceptions import CoprRequestException
 
 from sclbuilder import settings
 from sclbuilder.graph import PackageGraph
@@ -43,7 +44,7 @@ class Builder(metaclass=ABCMeta):
 
     @path.setter
     def path(self, value):
-        value += '/sclbuilder-{0}/'.format(self.repo)
+        value += '/sclbuilder-{0}/'.format(self.repo) #TODO Use temp_dir instead?
         if not os.path.isdir(value):
             os.makedirs(value)
         self.__path = value
@@ -94,13 +95,14 @@ class Builder(metaclass=ABCMeta):
             for num in sorted(self.num_of_deps.keys()):
                 if num == 0:
                     continue
-                for package in self.num_of_deps[num]:
-                    if package in self.built_packages:
+                for pkg in self.num_of_deps[num]:
+                    if pkg in self.built_packages:
                         continue
-                    if package in self.all_circular_deps:
-                        yield (package, True)
-                    elif self.deps_satisfied(package):
-                       yield (package, False)
+                    if pkg in self.all_circular_deps and\
+                        self.recipe_deps_satisfied(self.find_recipe(pkg)): 
+                        yield (pkg, True)
+                    elif self.deps_satisfied(pkg):
+                       yield (pkg, False)
 
     def deps_satisfied(self, package):
         '''
@@ -110,7 +112,20 @@ class Builder(metaclass=ABCMeta):
         if set(self.graph.G.successors(package)) <= self.built_packages:
             return True
         return False
- 
+
+    def recipe_deps_satisfied(self, recipe):
+        '''
+        Checks if all packages in recipe have satisfied their
+        dependencies on packages that are not in recipe
+        '''
+        deps = set()
+        for pkg in recipe.packages:
+            deps |= set(self.graph.G.successors(pkg))
+
+        if (deps - recipe.packages) <= self.built_packages:
+            return True
+        return False
+
     def build(self, package, verbose=True):
         self.built_packages.add(package)
         self.built_rpms |= set(self.rpm_dict[package])
@@ -171,13 +186,25 @@ class CoprBuilder(Builder):
     '''
     Contians methods to rebuild packages in Copr
     '''
-    def __init__(self, repo, packages, project=settings.DEFAULT_COPR_PROJECT, 
-            recipe_files=None):
+    def __init__(self, repo, packages, recipe_files=None, 
+            project=settings.DEFAULT_COPR_PROJECT, 
+            new=False,
+            chroots=settings.DEFAULT_CHROOTS):
         super(self.__class__, self).__init__(repo, packages, recipe_files)
         self.cl = CoprClient.create_from_file_config()
         self.pkg_files = {}
         self.make_rpm_dict()
         self.project = project
+        self.chroots = chroots
+        self.prefix =  min(packages, key=len)
+        try:
+            if new:
+                self.cl.create_project(self.project, chroots)
+        except CoprRequestException:
+            print("Project {} already exists.".format(self.project))
+        for chroot in chroots:
+            self.cl.modify_project_chroot_details(project, chroot, 
+                    pkgs=['scl-utils-build', self.prefix + "-build"])
 
     def get_files(self):
         '''
@@ -209,7 +236,8 @@ class CoprBuilder(Builder):
         if verbose:
             print("Building {}".format(package))
         result = self.cl.create_new_build(self.project,
-                pkgs=[self.pkg_files[package].srpm_file])
+                pkgs=[self.pkg_files[package].srpm_file],
+                chroots=self.chroots)
         
         while True:
             status = result.builds_list[0].handle.get_build_details().status
@@ -222,7 +250,7 @@ class CoprBuilder(Builder):
         else:
             raise BuildFailureException("Failed to build package {}, status {}".format(
             package, status))
- 
+
 
 def get_rpms(spec_file):
     '''
@@ -238,3 +266,4 @@ def get_rpms(spec_file):
     #TODO stderr to log
     rpms =  proc_data['stdout'].splitlines()
     return [rpm_pattern.search(x).groups()[0] for x in rpms]
+

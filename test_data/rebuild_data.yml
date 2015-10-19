@@ -1,9 +1,11 @@
 prefix: rh-python34-
-copr_project: sclbuilder-test 
+copr_project: sclbuilder-test
+chroots: [fedora-23-x86_64] 
 repo: rhscl-rh-python34-epel-7-x86-7-x86_64
 recipes: [/home/mcyprian/Codes/devel/sclbuilder/test_data/recipe1.yml,
            /home/mcyprian/Codes/devel/sclbuilder/test_data/recipe2.yml]
-packages: [rh-python34-babel
+packages: [rh-python34
+           rh-python34-babel
            rh-python34-mod_wsgi
            rh-python34-numpy
            rh-python34-python

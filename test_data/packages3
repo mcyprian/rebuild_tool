@@ -1,5 +1,6 @@
 rh-python34
 rh-python34-babel
+python-mod_wsgi
 rh-python34-numpy
 rh-python34-python
 rh-python34-python-coverage

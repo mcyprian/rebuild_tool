@@ -1,0 +1,6 @@
+- ['python-jinja2', 'with_docs 0']
+- ['python-nose', 'with_docs 0']
+- ['python-pygments']
+- ['python-sphinx']
+- ['python-nose', 'with_docs 1']
+- ['python-jinja2', 'with_docs 1']

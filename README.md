@@ -16,3 +16,9 @@ Finds all dependancies of the  packages, prints order of building and makes visu
                               between pacakges
       -h, --help              Show this message and exit.
 
+## Configuration
+Before rebuild using Copr as build system install and configure copr-cli:
+    
+    http://miroslav.suchy.cz/blog/archives/2013/12/29/how_to_build_in_copr/
+
+

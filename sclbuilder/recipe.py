@@ -1,5 +1,8 @@
 import yaml
 
+from sclbuilder.exceptions import IncompleteMetadataException
+from sclbuilder import settings
+
 def get_file_data(input_file, split=False):
     '''
     Opens given file and reads it,
@@ -11,6 +14,32 @@ def get_file_data(input_file, split=False):
             return data.splitlines()
         else:
             return data
+
+class RebuildMetadata(object):
+    '''
+    Class to load, check and store all rebuild metadata
+    '''
+    def __init__(self, yaml_data):
+        self.data = yaml.load(yaml_data)
+
+        for attr in ['build_system', 'packages_source', 'repo', 'packages']:
+            if attr not in self.data:
+                raise IncompleteMetadataException("Missing attribute {}.".format(attr))
+       
+        if not 'prefix' in self.data:
+            self.data['prefix'] = min(self.data['packages'], key=len) + "-"
+            # Use shortest of package names as prefix
+
+        if self.data['build_system'] == 'copr':
+            for attr in ['copr_project', 'chroots']:
+                if attr not in self.data:
+                    raise IncompleteMetadataException("Missing attribute {}.".format(attr))
+
+        for attr in ["chroots", "recipes", "chroot_pkgs"]:
+            if attr in self.data:
+                if not isinstance(self.data[attr], list):
+                    self.data[attr] = [self.data[attr]]
+        
 
 class Recipe(yaml.YAMLObject):
     '''
@@ -44,6 +73,3 @@ class Recipe(yaml.YAMLObject):
         for item in self.order:
             self.packages.add(item[0])
 
-
-
-        

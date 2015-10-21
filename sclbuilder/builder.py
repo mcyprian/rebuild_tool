@@ -19,19 +19,19 @@ class Builder(metaclass=ABCMeta):
     '''
     Abstract superclass of builder classes.
     '''
-    def __init__(self, repo, packages, recipe_files = None):
-        self.packages = packages
-        self.repo = repo
+    def __init__(self, rebuild_metadata):
+        self.packages = set(rebuild_metadata.data['packages'])
+        self.repo = rebuild_metadata.data['repo']
         self.rpm_dict = {}
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
         self.built_rpms = set()
-        self.graph = PackageGraph(repo, self.packages, self.rpm_dict)
+        self.graph = PackageGraph(self.repo, self.packages, self.rpm_dict)
         self.num_of_deps = {}
         self.circular_deps = []
         self.all_circular_deps  = set()
         try:
-            self.recipes = recipe_files
+            self.recipes = rebuild_metadata.data['recipes']
         except IOError:
             print("Failed to load recipe {0}.".format(recipe))
 
@@ -132,7 +132,7 @@ class Builder(metaclass=ABCMeta):
         if verbose:
             print("Building {0}...".format(package))
 
-    def run_building(self):  # TODO build metapackage, threading flags?
+    def run_building(self):
         '''
         First builds all packages without deps, then iterates over num_of_deps
         and simulate building of packages in right order
@@ -184,27 +184,39 @@ class Builder(metaclass=ABCMeta):
 
 class CoprBuilder(Builder):
     '''
-    Contians methods to rebuild packages in Copr
+    Contains methods to rebuild packages in Copr
     '''
-    def __init__(self, repo, packages, recipe_files=None, 
-            project=settings.DEFAULT_COPR_PROJECT, 
-            new=False,
-            chroots=settings.DEFAULT_CHROOTS):
-        super(self.__class__, self).__init__(repo, packages, recipe_files)
+    def __init__(self, rebuild_metadata):
+        super(self.__class__, self).__init__(rebuild_metadata)
         self.cl = CoprClient.create_from_file_config()
         self.pkg_files = {}
+        self.project = rebuild_metadata.data['copr_project']
+        self.chroots = rebuild_metadata.data['chroots']
+        self.prefix =  rebuild_metadata.data['prefix']
+        self.pkg_source = rebuild_metadata.data['packages_source']
+        if self.project_is_new():
+            self.cl.create_project(self.project, self.chroots)
+            # TODO try copr.client.exceptions.CoprRequestException: Unknown
+            # arguments passed (non-existing chroot probably)
+
+
+        if 'chroot_pkgs' in rebuild_metadata.data:
+            for chroot in self.chroots:
+                self.cl.modify_project_chroot_details(self.project, chroot, 
+                        pkgs=rebuild_metadata.data['chroot_pkgs'])
         self.make_rpm_dict()
-        self.project = project
-        self.chroots = chroots
-        self.prefix =  min(packages, key=len)
-        try:
-            if new:
-                self.cl.create_project(self.project, chroots)
-        except CoprRequestException:
-            print("Project {} already exists.".format(self.project))
-        for chroot in chroots:
-            self.cl.modify_project_chroot_details(project, chroot, 
-                    pkgs=['scl-utils-build', self.prefix + "-build"])
+        print("DICTIONARY OF RPMS")
+        print(self.rpm_dict)
+
+    def project_is_new(self):
+        '''
+        Checks if project already exists in Copr
+        '''
+        result = self.cl.get_projects_list().projects_list
+        for proj in result:
+            if proj.projectname == self.project:
+                return False
+        return True
 
     def get_files(self):
         '''
@@ -217,7 +229,7 @@ class CoprBuilder(Builder):
                     os.mkdir(pkg_dir)
                 self.pkg_files[package] = SrpmArchive(pkg_dir, package, self.repo)
                 print("Getting files of {0}.".format(package))
-                self.pkg_files[package].get()
+                self.pkg_files[package].get(src=self.pkg_source)
     
     def make_rpm_dict(self):
         '''

@@ -67,8 +67,9 @@ class SrpmArchive(object):
         '''
         with change_dir(self.temp_dir):
             proc_data = subprocess_popen_call(["koji", "download-build",
-                "--arch=src", "--lastestfrom=" + self.repo, self.package])
-            if proc_data['stderr']:
+                "--arch=src", "--latestfrom=f24-python3", self.package])
+            # TODO --latestfrom= TAG
+            if proc_data['returncode']:
                 raise ex.DownloadFailException(proc_data['stderr'])
         
         self.srpm_file = self.get_file(".src.rpm")

@@ -12,3 +12,6 @@ class DownloadFailException(BaseException):
 
 class BuildFailureException(BaseException):
     pass
+
+class IncompleteMetadataException(BaseException):
+    pass

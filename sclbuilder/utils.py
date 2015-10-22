@@ -48,6 +48,16 @@ def edit_bootstrap(spec_file, macro, new_value):
         raise CalledProcessError(cmd='sed', returncode=proc_data['returncode'])
     #TODO log message
 
+def check_bootstrap_macro(spec_file, macro):
+    macro_definition = "%global " + macro
+    proc_data = subprocess_popen_call(["grep", macro_definition, spec_file])
+    if proc_data['returncode']:
+        sed_data = subprocess_popen_call(["sed", "-i", '1,1s/^/{0} 1\\n/'.format(
+            macro_definition), spec_file])
+        if sed_data['returncode']:
+            print(sed_data['stderr'])
+            raise CalledProcessError(cmd='sed', returncode=sed_data['returncode'])
+
 def base_name(name):
     ''' 
     Removes version and parentheses from package name

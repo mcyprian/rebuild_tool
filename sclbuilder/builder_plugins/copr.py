@@ -3,9 +3,20 @@ from copr.client import CoprClient
 from copr.client.exceptions import CoprRequestException
 
 from sclbuilder import builder
-from sclbuilder.exceptions import BuildFailureException
+from sclbuilder.exceptions import BuildFailureException, IncompleteMetadataException
 
-# TODO move checking of rebuld_metadata attr to this module
+
+def check_metadata(rebuild_metadata):
+    '''
+    Checks if rebuild_metadata dictionary has all necesary 
+    attributes for work with Copr build system
+    '''
+    for attr in ['copr_project', 'chroots']:
+        if attr not in rebuild_metadata.data:
+            raise IncompleteMetadataException(
+            "Missing attribute {} necessary for Copr builds.".format(attr))
+
+
 class RealBuilder(builder.Builder):
     '''
     Contains methods to rebuild packages in Copr

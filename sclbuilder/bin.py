@@ -10,6 +10,7 @@ from sclbuilder.exceptions import UnknownRepoException, IncompleteMetadataExcept
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+# TODO move function to builder_plugins dir
 def load_plugin(name):
     return importlib.import_module('sclbuilder.builder_plugins.' + name)
 

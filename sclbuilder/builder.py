@@ -8,7 +8,8 @@ from subprocess import CalledProcessError
 from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import Recipe
 from sclbuilder.srpm_archive import SrpmArchive
-from sclbuilder.utils import change_dir, subprocess_popen_call, edit_bootstrap
+from sclbuilder.utils import change_dir, subprocess_popen_call, edit_bootstrap,\
+check_bootstrap_macro
 from sclbuilder.exceptions import MissingRecipeException
 
 class Builder(metaclass=ABCMeta):
@@ -33,6 +34,7 @@ class Builder(metaclass=ABCMeta):
 
     def __del__(self):
         shutil.rmtree(self.path)
+        shutil.rmtree(self.__tempdir)
 
     @property
     def path(self):
@@ -40,7 +42,8 @@ class Builder(metaclass=ABCMeta):
 
     @path.setter
     def path(self, value):
-        value += '/sclbuilder-{0}/'.format(self.repo) #TODO Use temp_dir instead?
+        self.__tempdir = value
+        value += '/sclbuilder-{0}/'.format(self.repo)
         if not os.path.isdir(value):
             os.makedirs(value)
         self.__path = value
@@ -171,11 +174,13 @@ class Builder(metaclass=ABCMeta):
             if len(step) == 1:
                 print("Building package {0}".format(step[0]))
             else:
-                print("Building package {0} {1}".format(step[0], step[1]))
-                (macro, value) = step[1].split(' ')
-                edit_bootstrap(self.pkg_files[step[0]].spec_file, macro, value)
-                self.pkg_files[step[0]].pack()
-            self.build(step[0], False)
+                (name, macro_value) = step
+                print("Building package {0} {1}".format(name, macro_value))
+                (macro, value) = macro_value.split(' ')
+                check_bootstrap_macro(self.pkg_files[name], macro)
+                edit_bootstrap(self.pkg_files[name].spec_file, macro, value)
+                self.pkg_files[name].pack()
+            self.build(name, False)
     
     def get_files(self):
         '''
@@ -202,15 +207,16 @@ class Builder(metaclass=ABCMeta):
         '''
         Returns list of rpms created from spec_file
         '''
-        rpm_pattern = re.compile("(^.*)-\d+.\d+.\d+.*$")
+        rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
         # TODO improve to search
         # python3-docutils-0.12-0.5.20140510svn7747.fc22.noarch
+        # 'gdb-debuginfo-7.10-25.fc22.x86_64' 
         proc_data = subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
                                       "scl_prefix " + self.prefix, spec_file])
         if proc_data['returncode']:
             print(proc_data['stderr'])
             raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])
     #TODO stderr to log
-        rpms =  proc_data['stdout'].splitlines()
+        rpms = proc_data['stdout'].splitlines()
         return [rpm_pattern.search(x).groups()[0] for x in rpms]
 

@@ -30,12 +30,7 @@ class RebuildMetadata(object):
             self.data['prefix'] = min(self.data['packages'], key=len) + "-"
             # Use shortest of package names as prefix
 
-        if self.data['build_system'] == 'copr':
-            for attr in ['copr_project', 'chroots']:
-                if attr not in self.data:
-                    raise IncompleteMetadataException("Missing attribute {}.".format(attr))
-
-        for attr in ["chroots", "recipes", "chroot_pkgs"]:
+        for attr in ["chroots", "recipes", "chroot_pkgs", "packages"]:
             if attr in self.data:
                 if not isinstance(self.data[attr], list):
                     self.data[attr] = [self.data[attr]]

@@ -27,7 +27,7 @@ class RebuildMetadata(object):
                 raise IncompleteMetadataException("Missing attribute {}.".format(attr))
        
         if not 'prefix' in self.data:
-            self.data['prefix'] = min(self.data['packages'], key=len) + "-"
+            self.data['prefix'] = ""
             # Use shortest of package names as prefix
 
         for attr in ["chroots", "recipes", "chroot_pkgs", "packages"]:

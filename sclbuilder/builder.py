@@ -8,9 +8,8 @@ from subprocess import CalledProcessError
 from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import Recipe
 from sclbuilder.srpm_archive import SrpmArchive
-from sclbuilder.utils import change_dir, subprocess_popen_call, edit_bootstrap,\
-check_bootstrap_macro
 from sclbuilder.exceptions import MissingRecipeException
+from sclbuilder import utils
 
 class Builder(metaclass=ABCMeta):
     '''
@@ -177,8 +176,8 @@ class Builder(metaclass=ABCMeta):
                 (name, macro_value) = step
                 print("Building package {0} {1}".format(name, macro_value))
                 (macro, value) = macro_value.split(' ')
-                check_bootstrap_macro(self.pkg_files[name], macro)
-                edit_bootstrap(self.pkg_files[name].spec_file, macro, value)
+                utils.check_bootstrap_macro(self.pkg_files[name].spec_file, macro)
+                utils.edit_bootstrap(self.pkg_files[name].spec_file, macro, value)
                 self.pkg_files[name].pack()
             self.build(name, False)
     
@@ -186,7 +185,7 @@ class Builder(metaclass=ABCMeta):
         '''
         Creates SrpmArchive object and downloads files for each package
         '''
-        with change_dir(self.path):
+        with utils.change_dir(self.path):
             for package in self.packages:
                 pkg_dir = self.path + package
                 if not os.path.exists(pkg_dir):
@@ -208,10 +207,7 @@ class Builder(metaclass=ABCMeta):
         Returns list of rpms created from spec_file
         '''
         rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
-        # TODO improve to search
-        # python3-docutils-0.12-0.5.20140510svn7747.fc22.noarch
-        # 'gdb-debuginfo-7.10-25.fc22.x86_64' 
-        proc_data = subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
+        proc_data = utils.subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
                                       "scl_prefix " + self.prefix, spec_file])
         if proc_data['returncode']:
             print(proc_data['stderr'])

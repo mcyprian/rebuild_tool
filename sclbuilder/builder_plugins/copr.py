@@ -41,6 +41,7 @@ class RealBuilder(builder.Builder):
                         pkgs=rebuild_metadata.data['chroot_pkgs'])
         self.make_rpm_dict()
         print(self.rpm_dict)
+        print("\n\nprefix {}".format(self.prefix))
 
     def project_is_new(self):
         '''

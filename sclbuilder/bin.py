@@ -19,15 +19,19 @@ def load_plugin(name):
 @click.option('--visual / --no-visual',
               default=True,
               help='Enable / disable visualization of relations between pacakges')
+@click.option('--analyse',
+              is_flag=True,
+              help='Analyse relations between packages and print circular'
+              'dependencies, disable execution of building')
 
-def main(rebuild_file, visual):
+def main(rebuild_file, visual, analyse):
     try:
-            rebuild_metadata = RebuildMetadata(get_file_data(rebuild_file))
+        rebuild_metadata = RebuildMetadata(get_file_data(rebuild_file))
     except IOError:
         print('No such file or directory: {}'.format(rebuild_file))
         sys.exit(1)
     except IncompleteMetadataException:
-        print('Missing metadata needed for rebuild') # TODO tell which attribute is missing
+        print('Missing metadata needed for rebuild') # TODO tell user which attribute is missing
         sys.exit(1)
     
     # Import of set builder module
@@ -42,6 +46,7 @@ def main(rebuild_file, visual):
     except CoprNoConfException:
         print('Copr configuration file: ~/.config/copr not found')
         sys.exit(1)
-    builder.run_building()
+    if not analyse:
+        builder.run_building()
     if visual:
         builder.graph.show()

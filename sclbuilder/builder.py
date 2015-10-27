@@ -7,7 +7,7 @@ from subprocess import CalledProcessError
 
 from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import Recipe
-from sclbuilder.srpm_archive import SrpmArchive
+from sclbuilder.srpm_archive import SrpmArchive, ArchiveContainer
 from sclbuilder.exceptions import MissingRecipeException
 from sclbuilder import utils
 
@@ -18,6 +18,7 @@ class Builder(metaclass=ABCMeta):
     def __init__(self, rebuild_metadata):
         self.packages = set(rebuild_metadata.data['packages'])
         self.repo = rebuild_metadata.data['repo']
+        self.pkg_files = ArchiveContainer()
         self.rpm_dict = {}
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
@@ -190,7 +191,7 @@ class Builder(metaclass=ABCMeta):
                 pkg_dir = self.path + package
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
-                self.pkg_files[package] = SrpmArchive(pkg_dir, package, self.repo)
+                self.pkg_files.add(package, pkg_dir, self.repo)
                 print("Getting files of {0}.".format(package))
                 self.pkg_files[package].get(src=self.pkg_source)
     def make_rpm_dict(self):

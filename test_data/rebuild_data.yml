@@ -7,7 +7,7 @@ packages_source: dnf
 repo: rhscl-rh-python34-epel-7-x86_64
 recipes: [/home/mcyprian/Codes/devel/sclbuilder/test_data/recipe1.yml,
            /home/mcyprian/Codes/devel/sclbuilder/test_data/recipe2.yml]
-
+prefix: rh-python34-
 packages: [rh-python34,
            rh-python34-babel,
            rh-python34-mod_wsgi,

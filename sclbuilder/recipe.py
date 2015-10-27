@@ -1,4 +1,5 @@
 import yaml
+from collections import UserDict
 
 from sclbuilder.exceptions import IncompleteMetadataException
 from sclbuilder import settings
@@ -15,25 +16,26 @@ def get_file_data(input_file, split=False):
         else:
             return data
 
-class RebuildMetadata(object):
+class RebuildMetadata(UserDict):
     '''
     Class to load, check and store all rebuild metadata
     '''
     def __init__(self, yaml_data):
+        super(self.__class__, self).__init__()
         self.data = yaml.load(yaml_data)
 
         for attr in ['build_system', 'packages_source', 'repo', 'packages']:
-            if attr not in self.data:
+            if attr not in self:
                 raise IncompleteMetadataException("Missing attribute {}.".format(attr))
        
-        if not 'prefix' in self.data:
-            self.data['prefix'] = ""
+        if not 'prefix' in self:
+            self['prefix'] = ""
             # Use shortest of package names as prefix
 
         for attr in ["chroots", "recipes", "chroot_pkgs", "packages"]:
-            if attr in self.data:
-                if not isinstance(self.data[attr], list):
-                    self.data[attr] = [self.data[attr]]
+            if attr in self:
+                if not isinstance(self[attr], list):
+                    self[attr] = [self[attr]]
         
 
 class Recipe(yaml.YAMLObject):

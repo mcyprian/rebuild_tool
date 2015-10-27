@@ -12,7 +12,7 @@ def check_metadata(rebuild_metadata):
     attributes for work with Copr build system
     '''
     for attr in ['copr_project', 'chroots']:
-        if attr not in rebuild_metadata.data:
+        if attr not in rebuild_metadata:
             raise IncompleteMetadataException(
             "Missing attribute {} necessary for Copr builds.".format(attr))
 
@@ -24,11 +24,10 @@ class RealBuilder(builder.Builder):
     def __init__(self, rebuild_metadata):
         super(self.__class__, self).__init__(rebuild_metadata)
         self.cl = CoprClient.create_from_file_config()
-        self.pkg_files = {}
-        self.project = rebuild_metadata.data['copr_project']
-        self.chroots = rebuild_metadata.data['chroots']
-        self.prefix =  rebuild_metadata.data['prefix']
-        self.pkg_source = rebuild_metadata.data['packages_source']
+        self.project = rebuild_metadata['copr_project']
+        self.chroots = rebuild_metadata['chroots']
+        self.prefix =  rebuild_metadata['prefix']
+        self.pkg_source = rebuild_metadata['packages_source']
         if self.project_is_new():
             self.cl.create_project(self.project, self.chroots)
             # TODO try copr.client.exceptions.CoprRequestException: Unknown
@@ -41,7 +40,6 @@ class RealBuilder(builder.Builder):
                         pkgs=rebuild_metadata.data['chroot_pkgs'])
         self.make_rpm_dict()
         print(self.rpm_dict)
-        print("\n\nprefix {}".format(self.prefix))
 
     def project_is_new(self):
         '''

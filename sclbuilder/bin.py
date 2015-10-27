@@ -6,13 +6,10 @@ from copr.client.exceptions import CoprNoConfException
 from sclbuilder import settings
 from sclbuilder.recipe import get_file_data, RebuildMetadata
 from sclbuilder.exceptions import UnknownRepoException, IncompleteMetadataException
+from sclbuilder.builder_plugins import loader
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-# TODO move function to builder_plugins dir
-def load_plugin(name):
-    return importlib.import_module('sclbuilder.builder_plugins.' + name)
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('rebuild_file', nargs=1)
@@ -35,7 +32,7 @@ def main(rebuild_file, visual, analyse):
         sys.exit(1)
     
     # Import of set builder module
-    builder_module = load_plugin(rebuild_metadata.data['build_system'])
+    builder_module = loader.load_plugin(rebuild_metadata.data['build_system'])
 
     try:
         builder = builder_module.RealBuilder(rebuild_metadata)

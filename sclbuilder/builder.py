@@ -7,7 +7,6 @@ from subprocess import CalledProcessError
 
 from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import Recipe
-from sclbuilder.srpm_archive import SrpmArchive, ArchiveContainer
 from sclbuilder.exceptions import MissingRecipeException
 from sclbuilder import utils
 
@@ -15,10 +14,10 @@ class Builder(metaclass=ABCMeta):
     '''
     Abstract superclass of builder classes.
     '''
-    def __init__(self, rebuild_metadata):
-        self.packages = set(rebuild_metadata.data['packages'])
-        self.repo = rebuild_metadata.data['repo']
-        self.pkg_files = ArchiveContainer()
+    def __init__(self, rebuild_metadata, pkg_source):
+        self.pkg_files = pkg_source
+        self.packages = set(rebuild_metadata['packages'])
+        self.repo = rebuild_metadata['repo']
         self.rpm_dict = {}
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
@@ -28,7 +27,7 @@ class Builder(metaclass=ABCMeta):
         self.circular_deps = []
         self.all_circular_deps  = set()
         try:
-            self.recipes = rebuild_metadata.data['recipes']
+            self.recipes = rebuild_metadata['recipes']
         except IOError:
             print("Failed to load recipe {0}.".format(recipe))
 
@@ -193,13 +192,13 @@ class Builder(metaclass=ABCMeta):
                     os.mkdir(pkg_dir)
                 self.pkg_files.add(package, pkg_dir, self.repo)
                 print("Getting files of {0}.".format(package))
-                self.pkg_files[package].get(src=self.pkg_source)
+                self.pkg_files[package].get()
+    
     def make_rpm_dict(self):
         '''
         Makes dictionary of rpms created from srpm of each package.
         '''
-        if not self.pkg_files:
-            self.get_files()
+        self.get_files()
         for package in self.packages:
             self.rpm_dict[package] = self.get_rpms(self.pkg_files[package].spec_file)
 

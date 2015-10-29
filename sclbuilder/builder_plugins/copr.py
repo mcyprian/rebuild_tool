@@ -21,8 +21,8 @@ class RealBuilder(builder.Builder):
     '''
     Contains methods to rebuild packages in Copr
     '''
-    def __init__(self, rebuild_metadata):
-        super(self.__class__, self).__init__(rebuild_metadata)
+    def __init__(self, rebuild_metadata, pkg_source):
+        super(self.__class__, self).__init__(rebuild_metadata, pkg_source)
         self.cl = CoprClient.create_from_file_config()
         self.project = rebuild_metadata['copr_project']
         self.chroots = rebuild_metadata['chroots']

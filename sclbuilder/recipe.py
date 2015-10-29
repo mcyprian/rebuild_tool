@@ -2,7 +2,6 @@ import yaml
 from collections import UserDict
 
 from sclbuilder.exceptions import IncompleteMetadataException
-from sclbuilder import settings
 
 def get_file_data(input_file, split=False):
     '''
@@ -30,7 +29,6 @@ class RebuildMetadata(UserDict):
        
         if not 'prefix' in self:
             self['prefix'] = ""
-            # Use shortest of package names as prefix
 
         for attr in ["chroots", "recipes", "chroot_pkgs", "packages"]:
             if attr in self:

@@ -5,17 +5,16 @@ from subprocess import Popen, PIPE, CalledProcessError
 from collections import UserDict
 
 import sclbuilder.exceptions as ex
-from sclbuilder import settings
 from sclbuilder.utils import subprocess_popen_call, change_dir
 
-class ArchiveContainer(UserDict):
+class PkgsContainer(UserDict):
     def add(self, package, pkg_dir, repo):
         '''
-        Adds new SrpmArchive object to self.data
+        Adds new DnfArchive object to self.data
         '''
-        self.data[package] = SrpmArchive(package, pkg_dir, repo)
+        self[package] = DnfArchive(package, pkg_dir, repo)
 
-class SrpmArchive(object):
+class DnfArchive(object):
     '''
     Contains methods to download, unpack, edit and pack srpm
     '''
@@ -55,7 +54,7 @@ class SrpmArchive(object):
     def srpm_file(self, name):
         self.__srpm_file = name
 
-    def dnf_download(self):
+    def download(self):
         '''
         Download srpm of package from selected repo using dnf.
         '''
@@ -70,21 +69,6 @@ class SrpmArchive(object):
             raise ex.DownloadFailException(proc_data['stderr'])
 
         self.srpm_file = self.get_file('.src.rpm')
-        
-    def koji_download(self):
-        '''
-        Download srpm of package from selected repo using koji.
-        '''
-        with change_dir(self.pkg_dir):
-            proc_data = subprocess_popen_call(["koji", "download-build",
-                "--arch=src", "--latestfrom=f24-python3", self.package])
-            # TODO --latestfrom= TAG
-            if proc_data['returncode']:
-                raise ex.DownloadFailException(proc_data['stderr'])
-        
-        self.srpm_file = self.get_file(".src.rpm")
-      
-        # koji download-build --arch=src --latestfrom=f24-python3 python3
 
     def unpack(self):
         '''
@@ -133,10 +117,6 @@ class SrpmArchive(object):
                 + '*' + suffix))
         else:
             return name[0][len(self.pkg_dir):]
-    
-    def get(self, src="dnf"):
-        if src == "dnf":
-            self.dnf_download()
-        elif src == "koji":
-            self.koji_download()
+    def get(self):
+        self.download()
         self.unpack()

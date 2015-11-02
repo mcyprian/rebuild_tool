@@ -21,7 +21,7 @@ class PackageGraph(object):
 
     def make_graph(self):
         '''
-        Process all the packages, finds theirs dependancies and makes 
+        Process all the packages, finds theirs dependancies and makes
         graph of relations
         '''
         for package in self.packages:
@@ -31,7 +31,7 @@ class PackageGraph(object):
             self.process_deps(package)
 
 
-    def process_deps(self, package, recursive=False):
+    def process_deps(self, package):
         '''
         Adds edge between package and each of its dependancies,
         pacakge was not processes before. When recursive is True
@@ -45,16 +45,13 @@ class PackageGraph(object):
             self.processed_packages.add(package)
             for dep in self.get_deps(package):
                 self.G.add_edge(package, self.find_package(dep))
-            for rpm in self.rpm_dict[package]:
-                if recursive:
-                    self.process_deps(dep)
 
     def get_deps(self, package):
         '''
         Returns all dependancies of the package found in selected repo
         '''
-        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src", 
-            "--enablerepo=" + self.repo, "--requires", package])
+        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src",
+                                           "--enablerepo=" + self.repo, "--requires", package])
         if proc_data['returncode']:
             if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
                 raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
@@ -80,7 +77,7 @@ class PackageGraph(object):
             elif b > a:
                 remove_if_present(cycles, a)
         print(cycles)
-        circular_deps = [x for n,x in enumerate(cycles) if x not in cycles[:n]]
+        circular_deps = [x for n, x in enumerate(cycles) if x not in cycles[:n]]
 
         print("\nPackages to build:")
         for num in sorted(num_of_deps.keys()):
@@ -95,7 +92,7 @@ class PackageGraph(object):
             if rpm in self.rpm_dict[package]:
                 return package
         print("NOT FOUND {}".format(rpm)) # TODO Handle exception if package not found
-    
+
     def show(self):
         '''
         Draws nodes, edges, labels and shows the graph

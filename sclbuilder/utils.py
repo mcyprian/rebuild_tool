@@ -15,14 +15,14 @@ def remove_prefix(name, prefix):
     else:
         return name[len(prefix):]
 
-def subprocess_popen_call(command=[]):
+def subprocess_popen_call(command):
     proc = Popen(command, stdout=PIPE, stderr=PIPE)
     stream_data = proc.communicate()
     stdout_str = stream_data[0].decode(locale.getpreferredencoding())
     stderr_str = stream_data[1].decode(locale.getpreferredencoding())
     return {'returncode' : proc.returncode, 'stdout' : stdout_str, 'stderr' : stderr_str}
 
-class change_dir(object):
+class ChangeDir(object):
     '''
     With statement class to store current dir change it and return
     to previous path.
@@ -42,7 +42,7 @@ def edit_bootstrap(spec_file, macro, new_value):
     '''
     Sets edit_bootstrap macro macro to new_value in spec_file
     '''
-    proc_data = subprocess_popen_call(["sed", '-i', '-e','s/{0} [0-9]/{0} {1}/g'.format(
+    proc_data = subprocess_popen_call(["sed", '-i', '-e', 's/{0} [0-9]/{0} {1}/g'.format(
         macro, new_value), spec_file])
     if proc_data['returncode']:
         raise CalledProcessError(cmd='sed', returncode=proc_data['returncode'])
@@ -59,7 +59,7 @@ def check_bootstrap_macro(spec_file, macro):
             raise CalledProcessError(cmd='sed', returncode=sed_data['returncode'])
 
 def base_name(name):
-    ''' 
+    '''
     Removes version and parentheses from package name
     foo >= 1.0  >>  foo
     foo(64bit)  >>  foo

@@ -18,6 +18,7 @@ class Builder(metaclass=ABCMeta):
         self.pkg_files = pkg_source
         self.packages = set(rebuild_metadata['packages'])
         self.repo = rebuild_metadata['repo']
+        self.prefix = rebuild_metadata['prefix']
         self.rpm_dict = {}
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
@@ -25,11 +26,11 @@ class Builder(metaclass=ABCMeta):
         self.graph = PackageGraph(self.repo, self.packages, self.rpm_dict)
         self.num_of_deps = {}
         self.circular_deps = []
-        self.all_circular_deps  = set()
+        self.all_circular_deps = set()
         try:
             self.recipes = rebuild_metadata['recipes']
         except IOError:
-            print("Failed to load recipe {0}.".format(recipe))
+            print("Failed to load recipe {0}.".format(rebuild_metadata['recipes']))
 
     def __del__(self):
         shutil.rmtree(self.path)
@@ -97,10 +98,10 @@ class Builder(metaclass=ABCMeta):
                     if pkg in self.built_packages:
                         continue
                     if pkg in self.all_circular_deps and\
-                        self.recipe_deps_satisfied(self.find_recipe(pkg)): 
+                        self.recipe_deps_satisfied(self.find_recipe(pkg)):
                         yield (pkg, True)
                     elif self.deps_satisfied(pkg):
-                       yield (pkg, False)
+                        yield (pkg, False)
 
     def deps_satisfied(self, package):
         '''
@@ -138,7 +139,7 @@ class Builder(metaclass=ABCMeta):
         if not self.num_of_deps:
             print("Nothing to build")
             return
-        
+
         # Builds all packages without deps
         if 0 in self.num_of_deps.keys():
             for package in self.num_of_deps[0]:
@@ -163,7 +164,7 @@ class Builder(metaclass=ABCMeta):
             if package in recipe.packages:
                 return recipe
         raise MissingRecipeException("Recipe for package {0} not found".format(package))
-    
+
     def build_following_recipe(self, recipe):
         '''
         Builds packages in order and macro values discribed in given
@@ -180,12 +181,12 @@ class Builder(metaclass=ABCMeta):
                 utils.edit_bootstrap(self.pkg_files[name].spec_file, macro, value)
                 self.pkg_files[name].pack()
             self.build(name, False)
-    
+ 
     def get_files(self):
         '''
         Creates SrpmArchive object and downloads files for each package
         '''
-        with utils.change_dir(self.path):
+        with utils.ChangeDir(self.path):
             for package in self.packages:
                 pkg_dir = self.path + package
                 if not os.path.exists(pkg_dir):
@@ -193,7 +194,7 @@ class Builder(metaclass=ABCMeta):
                 self.pkg_files.add(package, pkg_dir, self.repo)
                 print("Getting files of {0}.".format(package))
                 self.pkg_files[package].get()
-    
+
     def make_rpm_dict(self):
         '''
         Makes dictionary of rpms created from srpm of each package.
@@ -208,7 +209,7 @@ class Builder(metaclass=ABCMeta):
         '''
         rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
         proc_data = utils.subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
-                                      "scl_prefix " + self.prefix, spec_file])
+                                                 "scl_prefix " + self.prefix, spec_file])
         if proc_data['returncode']:
             print(proc_data['stderr'])
             raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])

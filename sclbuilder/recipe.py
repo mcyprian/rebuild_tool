@@ -26,7 +26,7 @@ class RebuildMetadata(UserDict):
         for attr in ['build_system', 'packages_source', 'repo', 'packages']:
             if attr not in self:
                 raise IncompleteMetadataException("Missing attribute {}.".format(attr))
-       
+ 
         if not 'prefix' in self:
             self['prefix'] = ""
 
@@ -34,7 +34,7 @@ class RebuildMetadata(UserDict):
             if attr in self:
                 if not isinstance(self[attr], list):
                     self[attr] = [self[attr]]
-        
+
 
 class Recipe(yaml.YAMLObject):
     '''
@@ -56,12 +56,11 @@ class Recipe(yaml.YAMLObject):
 
     @order.setter
     def order(self, recipe_data):
-            self.__order = yaml.load(recipe_data)
+        self.__order = yaml.load(recipe_data)
 
     def get_packages(self):
         '''
-        Fills packages set with all packages names present in 
-        recipe
+        Fills packages set with all packages names present in recipe
         '''
         if not hasattr(self, 'order'):
             return

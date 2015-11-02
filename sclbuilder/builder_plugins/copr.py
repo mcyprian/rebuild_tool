@@ -8,13 +8,13 @@ from sclbuilder.exceptions import BuildFailureException, IncompleteMetadataExcep
 
 def check_metadata(rebuild_metadata):
     '''
-    Checks if rebuild_metadata dictionary has all necesary 
+    Checks if rebuild_metadata dictionary has all necesary
     attributes for work with Copr build system
     '''
     for attr in ['copr_project', 'chroots']:
         if attr not in rebuild_metadata:
             raise IncompleteMetadataException(
-            "Missing attribute {} necessary for Copr builds.".format(attr))
+                "Missing attribute {} necessary for Copr builds.".format(attr))
 
 
 class RealBuilder(builder.Builder):
@@ -26,7 +26,6 @@ class RealBuilder(builder.Builder):
         self.cl = CoprClient.create_from_file_config()
         self.project = rebuild_metadata['copr_project']
         self.chroots = rebuild_metadata['chroots']
-        self.prefix =  rebuild_metadata['prefix']
         self.pkg_source = rebuild_metadata['packages_source']
         if self.project_is_new():
             self.cl.create_project(self.project, self.chroots)
@@ -36,8 +35,9 @@ class RealBuilder(builder.Builder):
 
         if 'chroot_pkgs' in rebuild_metadata.data:
             for chroot in self.chroots:
-                self.cl.modify_project_chroot_details(self.project, chroot, 
-                        pkgs=rebuild_metadata.data['chroot_pkgs'])
+                self.cl.modify_project_chroot_details(self.project,
+                                                      chroot,
+                                                      pkgs=rebuild_metadata.data['chroot_pkgs'])
         self.make_rpm_dict()
         print(self.rpm_dict)
 
@@ -60,9 +60,9 @@ class RealBuilder(builder.Builder):
         if verbose:
             print("Building {}".format(package))
         result = self.cl.create_new_build(self.project,
-                pkgs=[self.pkg_files[package].srpm_file],
-                chroots=self.chroots)
-        
+                                          pkgs=[self.pkg_files[package].srpm_file],
+                                          chroots=self.chroots)
+
         while True:
             status = result.builds_list[0].handle.get_build_details().status
             if status in ["skipped", "failed", "succeeded"]:
@@ -73,4 +73,4 @@ class RealBuilder(builder.Builder):
             self.built_rpms |= set(self.rpm_dict[package])
         else:
             raise BuildFailureException("Failed to build package {}, status {}".format(
-            package, status))
+                package, status))

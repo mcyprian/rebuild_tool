@@ -191,7 +191,7 @@ class Builder(metaclass=ABCMeta):
                 pkg_dir = self.path + package
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
-                self.pkg_files.add(package, pkg_dir, self.repo)
+                self.pkg_files.add(package, pkg_dir, self.repo, self.prefix)
                 print("Getting files of {0}.".format(package))
                 self.pkg_files[package].get()
 

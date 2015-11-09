@@ -8,21 +8,22 @@ import sclbuilder.exceptions as ex
 from sclbuilder.utils import subprocess_popen_call, ChangeDir
 
 class PkgsContainer(UserDict):
-    def add(self, package, pkg_dir, repo):
+    def add(self, package, pkg_dir, repo, prefix):
         '''
         Adds new DnfArchive object to self.data
         '''
-        self[package] = DnfArchive(package, pkg_dir, repo)
+        self[package] = DnfArchive(package, pkg_dir, repo, prefix)
 
 class DnfArchive(object):
     '''
     Contains methods to download, unpack, edit and pack srpm
     '''
-    def __init__(self, package, pkg_dir, repo, srpm_file=None):
+    def __init__(self, package, pkg_dir, repo, prefix, srpm_file=None):
         self.pkg_dir = pkg_dir
         self.package = package
         self.repo = repo
         self.srpm_file = srpm_file
+        self.prefix = prefix
         self.spec_file = None
 
     @property
@@ -97,7 +98,7 @@ class DnfArchive(object):
                          '--define', '_builddir {0}'.format(save_dir),
                          '--define', '_srcrpmdir {0}'.format(save_dir),
                          '--define', '_rpmdir {0}'.format(save_dir),
-                         '--define', 'scl_prefix rh-python34-',
+                         '--define', 'scl_prefix {0}'.format(self.prefix),
                          '-bs', self.spec_file], stdout=PIPE,
                          stderr=PIPE).communicate()[0].strip()
         except OSError:

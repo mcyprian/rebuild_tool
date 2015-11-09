@@ -5,11 +5,11 @@ from sclbuilder.utils import ChangeDir, subprocess_popen_call
 from sclbuilder.exceptions import DownloadFailException
 
 class PkgsContainer(UserDict):
-    def add(self, package, pkg_dir, repo):
+    def add(self, package, pkg_dir, repo, prefix):
         '''
         Adds new KojiArchive object to self.data
         '''
-        self[package] = KojiArchive(package, pkg_dir, repo)
+        self[package] = KojiArchive(package, pkg_dir, repo, prefix)
 
 class KojiArchive(DnfArchive):
     '''

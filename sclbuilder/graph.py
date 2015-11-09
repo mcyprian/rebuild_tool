@@ -50,7 +50,7 @@ class PackageGraph(object):
         '''
         Returns all dependancies of the package found in selected repo
         '''
-        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src",
+        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src","--disablerepo=*",
                                            "--enablerepo=" + self.repo, "--requires", package])
         if proc_data['returncode']:
             if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):

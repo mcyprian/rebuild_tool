@@ -46,6 +46,10 @@ def edit_bootstrap(spec_file, macro, new_value):
         macro, new_value), spec_file])
     if proc_data['returncode']:
         raise CalledProcessError(cmd='sed', returncode=proc_data['returncode'])
+    bumpspec = subprocess_popen_call(['rpmdev-bumpspec', spec_file])
+    if bumpspec['returncode']:
+        raise CalledProcessError(cmd='rpmdev-bumpspec', returncode=bumpspec['returncode'])
+
     #TODO log message
 
 def check_bootstrap_macro(spec_file, macro):

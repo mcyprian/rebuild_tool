@@ -7,8 +7,19 @@ from subprocess import CalledProcessError
 
 from sclbuilder.graph import PackageGraph
 from sclbuilder.recipe import Recipe
-from sclbuilder.exceptions import MissingRecipeException
+from sclbuilder.exceptions import MissingRecipeException, BuildFailureException
 from sclbuilder import utils
+
+def check_build(build_fce):
+    def inner(self, package, verbose=True):
+        if build_fce(self, package, verbose):
+            self.built_packages.add(package)
+            self.built_rpms |= set(self.rpm_dict[package])
+            return True
+        else:
+            raise BuildFailureException("Failed to build package {}.".format(package))
+    return inner
+
 
 class Builder(metaclass=ABCMeta):
     '''
@@ -85,7 +96,7 @@ class Builder(metaclass=ABCMeta):
                 for package in self.num_of_deps[num]:
                     if package not in self.built_packages and self.deps_satisfied(package):
                         yield (package, False)
-
+ 
     def build_ord_recipe_gen(self):
         '''
         Iterates over num_of_deps, building circular_deps using recipes
@@ -125,11 +136,11 @@ class Builder(metaclass=ABCMeta):
             return True
         return False
 
+    @check_build
     def build(self, package, verbose=True):
-        self.built_packages.add(package)
-        self.built_rpms |= set(self.rpm_dict[package])
         if verbose:
             print("Building {0}...".format(package))
+        return True
 
     def run_building(self):
         '''

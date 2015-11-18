@@ -39,6 +39,7 @@ def main(rebuild_file, visual, analyse):
         print('Missing metadata needed for rebuild') # TODO tell user which attribute is missing
         sys.exit(1)
 
+    # TODO catch KeyError
     # Import of selected builder module
     builder_module = builder_loader.load_plugin(rebuild_metadata['build_system'])
     logger.info("Builder plugin {0} loaded.".format(builder_module))

@@ -51,7 +51,7 @@ class RealBuilder(builder.Builder):
                 return False
         return True
 
-
+    @builder.check_build
     def build(self, package, verbose=True):
         '''
         Building package using copr api, periodicaly checking
@@ -69,8 +69,6 @@ class RealBuilder(builder.Builder):
                 break
             time.sleep(10)
         if status == 'succeeded':
-            self.built_packages.add(package)
-            self.built_rpms |= set(self.rpm_dict[package])
+            return True
         else:
-            raise BuildFailureException("Failed to build package {}, status {}".format(
-                package, status))
+            return False

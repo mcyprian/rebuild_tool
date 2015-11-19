@@ -26,7 +26,6 @@ class RealBuilder(builder.Builder):
         self.cl = CoprClient.create_from_file_config()
         self.project = rebuild_metadata['copr_project']
         self.chroots = rebuild_metadata['chroots']
-        self.pkg_source = rebuild_metadata['packages_source']
         if self.project_is_new():
             self.cl.create_project(self.project, self.chroots)
             # TODO try copr.client.exceptions.CoprRequestException: Unknown
@@ -38,8 +37,6 @@ class RealBuilder(builder.Builder):
                 self.cl.modify_project_chroot_details(self.project,
                                                       chroot,
                                                       pkgs=rebuild_metadata.data['chroot_pkgs'])
-        self.make_rpm_dict()
-        print(self.rpm_dict)
 
     def project_is_new(self):
         '''
@@ -60,7 +57,7 @@ class RealBuilder(builder.Builder):
         if verbose:
             print("Building {}".format(package))
         result = self.cl.create_new_build(self.project,
-                                          pkgs=[self.pkg_files[package].srpm_file],
+                                          pkgs=[self.pkg_source[package].srpm_file],
                                           chroots=self.chroots)
 
         while True:

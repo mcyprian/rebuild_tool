@@ -1,6 +1,7 @@
 import locale
 import glob
 import os
+import re
 from subprocess import Popen, PIPE, CalledProcessError
 from collections import UserDict
 
@@ -21,10 +22,12 @@ class DnfArchive(object):
     def __init__(self, package, pkg_dir, repo, prefix, srpm_file=None):
         self.pkg_dir = pkg_dir
         self.package = package
-        self.repo = repo
+        self.repo = repo                  #TODO make repo and prefix class attr
         self.srpm_file = srpm_file
         self.prefix = prefix
-        self.spec_file = None
+        self.download()
+        self.unpack()
+        self.rpms = self.rpms_from_spec
 
     @property
     def pkg_dir(self):
@@ -54,6 +57,34 @@ class DnfArchive(object):
     @srpm_file.setter
     def srpm_file(self, name):
         self.__srpm_file = name
+
+    @property
+    def dependencies(self):
+        '''
+        Returns all dependencies of the package found in selected repo
+        '''
+        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src","--disablerepo=*",
+                                           "--enablerepo=" + self.repo, "--requires", self.package])
+        if proc_data['returncode']:
+            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
+                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
+        all_deps = set(proc_data['stdout'].splitlines()[1:])
+        return all_deps
+    
+    @property
+    def rpms_from_spec(self):
+        '''
+        Returns list of rpms created from spec_file
+        '''
+        rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
+        proc_data = subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
+                                                 "scl_prefix " + self.prefix, self.spec_file])
+        if proc_data['returncode']:
+            print(proc_data['stderr'])
+            raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])
+    #TODO stderr to log
+        rpms = proc_data['stdout'].splitlines()
+        return {rpm_pattern.search(x).groups()[0] for x in rpms}
 
     def download(self):
         '''
@@ -117,6 +148,4 @@ class DnfArchive(object):
             raise IOError("Failed to find {}".format(self.package + '*' + suffix))
         else:
             return name[0][len(self.pkg_dir):]
-    def get(self):
-        self.download()
-        self.unpack()
+    

@@ -1,5 +1,4 @@
 import os
-import re
 import tempfile
 import shutil
 from abc import ABCMeta
@@ -11,6 +10,9 @@ from sclbuilder.exceptions import MissingRecipeException, BuildFailureException
 from sclbuilder import utils
 
 def check_build(build_fce):
+    '''
+    Decorator to check if build was successfull or not
+    '''
     def inner(self, package, verbose=True):
         if build_fce(self, package, verbose):
             self.built_packages.add(package)
@@ -26,18 +28,18 @@ class Builder(metaclass=ABCMeta):
     Abstract superclass of builder classes.
     '''
     def __init__(self, rebuild_metadata, pkg_source):
-        self.pkg_files = pkg_source
+        self.pkg_source = pkg_source
         self.packages = set(rebuild_metadata['packages'])
         self.repo = rebuild_metadata['repo']
         self.prefix = rebuild_metadata['prefix']
-        self.rpm_dict = {}
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
         self.built_rpms = set()
-        self.graph = PackageGraph(self.repo, self.packages, self.rpm_dict)
         self.num_of_deps = {}
         self.circular_deps = []
         self.all_circular_deps = set()
+        self.get_files()
+        self.graph = PackageGraph(self.repo, self.pkg_source)
         try:
             self.recipes = rebuild_metadata['recipes']
         except IOError:
@@ -188,11 +190,12 @@ class Builder(metaclass=ABCMeta):
                 (name, macro_value) = step
                 print("Building package {0} {1}".format(name, macro_value))
                 (macro, value) = macro_value.split(' ')
-                utils.check_bootstrap_macro(self.pkg_files[name].spec_file, macro)
-                utils.edit_bootstrap(self.pkg_files[name].spec_file, macro, value)
-                self.pkg_files[name].pack()
-            self.build(name, False)
+                utils.check_bootstrap_macro(self.pkg_source[name].spec_file, macro)
+                utils.edit_bootstrap(self.pkg_source[name].spec_file, macro, value)
+                self.pkg_source[name].pack()
+            self.build(step[0], False)
  
+#TODO move to PkgsContainer ?
     def get_files(self):
         '''
         Creates SrpmArchive object and downloads files for each package
@@ -202,29 +205,5 @@ class Builder(metaclass=ABCMeta):
                 pkg_dir = self.path + package
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
-                self.pkg_files.add(package, pkg_dir, self.repo, self.prefix)
                 print("Getting files of {0}.".format(package))
-                self.pkg_files[package].get()
-
-    def make_rpm_dict(self):
-        '''
-        Makes dictionary of rpms created from srpm of each package.
-        '''
-        self.get_files()
-        for package in self.packages:
-            self.rpm_dict[package] = self.get_rpms(self.pkg_files[package].spec_file)
-
-    def get_rpms(self, spec_file):
-        '''
-        Returns list of rpms created from spec_file
-        '''
-        rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
-        proc_data = utils.subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
-                                                 "scl_prefix " + self.prefix, spec_file])
-        if proc_data['returncode']:
-            print(proc_data['stderr'])
-            raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])
-    #TODO stderr to log
-        rpms = proc_data['stdout'].splitlines()
-        return [rpm_pattern.search(x).groups()[0] for x in rpms]
-
+                self.pkg_source.add(package, pkg_dir, self.repo, self.prefix)

@@ -11,11 +11,10 @@ class PackageGraph(object):
     Class to make graph of packages, analyse dependancies and
     plan building order
     '''
-    def __init__(self, repo, packages, rpm_dict):
+    def __init__(self, repo, pkg_source):
         self.repo = repo
-        self.packages = packages
         self.rpms = set()
-        self.rpm_dict = rpm_dict
+        self.pkg_source = pkg_source
         self.processed_packages = set()
         self.G = nx.DiGraph()
 
@@ -24,10 +23,10 @@ class PackageGraph(object):
         Process all the packages, finds theirs dependancies and makes
         graph of relations
         '''
-        for package in self.packages:
-            self.rpms |= set(self.rpm_dict[package])
+        for package in self.pkg_source.values():
+            self.rpms |= package.rpms
         print("Processing package:")
-        for package in self.packages:
+        for package in self.pkg_source.keys():
             self.process_deps(package)
 
 
@@ -43,20 +42,8 @@ class PackageGraph(object):
             print(package)
             self.G.add_node(package)
             self.processed_packages.add(package)
-            for dep in self.get_deps(package):
+            for dep in self.pkg_source[package].dependencies & self.rpms:
                 self.G.add_edge(package, self.find_package(dep))
-
-    def get_deps(self, package):
-        '''
-        Returns all dependancies of the package found in selected repo
-        '''
-        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src","--disablerepo=*",
-                                           "--enablerepo=" + self.repo, "--requires", package])
-        if proc_data['returncode']:
-            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
-                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
-        all_deps = set(proc_data['stdout'].splitlines()[1:])
-        return all_deps & self.rpms
 
     def analyse(self):
         '''
@@ -88,8 +75,8 @@ class PackageGraph(object):
         return (num_of_deps, circular_deps)
 
     def find_package(self, rpm):
-        for package in self.packages:
-            if rpm in self.rpm_dict[package]:
+        for package in self.pkg_source.keys():
+            if rpm in self.pkg_source[package].rpms:
                 return package
         print("NOT FOUND {}".format(rpm)) # TODO Handle exception if package not found
 

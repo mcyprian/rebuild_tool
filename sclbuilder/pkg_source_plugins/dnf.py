@@ -13,18 +13,23 @@ class PkgsContainer(UserDict):
         '''
         Adds new DnfArchive object to self.data
         '''
-        self[package] = DnfArchive(package, pkg_dir, repo, prefix)
+        if not DnfArchive.repo:
+            DnfArchive.repo = repo
+            DnfArchive.prefix = prefix
+
+        self[package] = DnfArchive(package, pkg_dir)
 
 class DnfArchive(object):
     '''
     Contains methods to download, unpack, edit and pack srpm
     '''
-    def __init__(self, package, pkg_dir, repo, prefix, srpm_file=None):
+    repo = None
+    prefix = None
+
+    def __init__(self, package, pkg_dir, srpm_file=None):
         self.pkg_dir = pkg_dir
         self.package = package
-        self.repo = repo                  #TODO make repo and prefix class attr
         self.srpm_file = srpm_file
-        self.prefix = prefix
         self.download()
         self.unpack()
         self.rpms = self.rpms_from_spec
@@ -64,10 +69,10 @@ class DnfArchive(object):
         Returns all dependencies of the package found in selected repo
         '''
         proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src","--disablerepo=*",
-                                           "--enablerepo=" + self.repo, "--requires", self.package])
+                                           "--enablerepo=" + type(self).repo, "--requires", self.package])
         if proc_data['returncode']:
-            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
-                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
+            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(type(self).repo):
+                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(type(self).repo))
         all_deps = set(proc_data['stdout'].splitlines()[1:])
         return all_deps
     
@@ -78,7 +83,7 @@ class DnfArchive(object):
         '''
         rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
         proc_data = subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
-                                                 "scl_prefix " + self.prefix, self.spec_file])
+                                                 "scl_prefix " + type(self).prefix, self.spec_file])
         if proc_data['returncode']:
             print(proc_data['stderr'])
             raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])
@@ -91,13 +96,13 @@ class DnfArchive(object):
         Download srpm of package from selected repo using dnf.
         '''
         proc_data = subprocess_popen_call(["dnf", "download", "--disablerepo=*", 
-                                           "--enablerepo=" + self.repo,
+                                           "--enablerepo=" + type(self).repo,
                                            "--destdir", self.pkg_dir,
                                            "--source", self.package])
 
         if proc_data['returncode']:
-            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(self.repo):
-                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(self.repo))
+            if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(type(self).repo):
+                raise ex.UnknownRepoException('Repository {} is probably disabled'.format(type(self).repo))
         elif proc_data['stderr']:
             raise ex.DownloadFailException(proc_data['stderr'])
 
@@ -129,7 +134,7 @@ class DnfArchive(object):
                          '--define', '_builddir {0}'.format(save_dir),
                          '--define', '_srcrpmdir {0}'.format(save_dir),
                          '--define', '_rpmdir {0}'.format(save_dir),
-                         '--define', 'scl_prefix {0}'.format(self.prefix),
+                         '--define', 'scl_prefix {0}'.format(type(self).prefix),
                          '-bs', self.spec_file], stdout=PIPE,
                          stderr=PIPE).communicate()[0].strip()
         except OSError:

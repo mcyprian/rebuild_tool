@@ -9,7 +9,10 @@ class PkgsContainer(UserDict):
         '''
         Adds new KojiArchive object to self.data
         '''
-        self[package] = KojiArchive(package, pkg_dir, repo, prefix)
+        if not DnfArchive.repo:
+            DnfArchive.repo = repo
+            DnfArchive.prefix = prefix
+        self[package] = KojiArchive(package, pkg_dir)
 
 class KojiArchive(DnfArchive):
     '''

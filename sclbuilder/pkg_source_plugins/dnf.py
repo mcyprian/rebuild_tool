@@ -1,96 +1,38 @@
 import locale
-import glob
-import os
-import re
 from subprocess import Popen, PIPE, CalledProcessError
 from collections import UserDict
 
 import sclbuilder.exceptions as ex
+from sclbuilder.pkg_source import PkgSrcArchive, set_class_attrs
 from sclbuilder.utils import subprocess_popen_call, ChangeDir
 
 class PkgsContainer(UserDict):
-    def add(self, package, pkg_dir, repo, prefix):
+    @set_class_attrs
+    def add(self, package, pkg_dir):
         '''
         Adds new DnfArchive object to self.data
         '''
-        if not DnfArchive.repo:
-            DnfArchive.repo = repo
-            DnfArchive.prefix = prefix
-
         self[package] = DnfArchive(package, pkg_dir)
 
-class DnfArchive(object):
+class DnfArchive(PkgSrcArchive):
     '''
-    Contains methods to download, unpack, edit and pack srpm
+    Contains methods to download from dnf, unpack, edit and pack srpm
     '''
-    repo = None
-    prefix = None
-
-    def __init__(self, package, pkg_dir, srpm_file=None):
-        self.pkg_dir = pkg_dir
-        self.package = package
-        self.srpm_file = srpm_file
-        self.download()
-        self.unpack()
-        self.rpms = self.rpms_from_spec
-
-    @property
-    def pkg_dir(self):
-        return self._pkg_dir
-
-    @pkg_dir.setter
-    def pkg_dir(self, path):
-        if not os.path.exists(path):
-            os.mkdir(path)
-        if path[-1] == '/':
-            self._pkg_dir = path
-        else:
-            self._pkg_dir = path + '/'
-
-    @property
-    def spec_file(self):
-        return self._pkg_dir + self.__spec_file
-
-    @spec_file.setter
-    def spec_file(self, name):
-        self.__spec_file = name
-
-    @property
-    def srpm_file(self):
-        return self._pkg_dir + self.__srpm_file
-
-    @srpm_file.setter
-    def srpm_file(self, name):
-        self.__srpm_file = name
 
     @property
     def dependencies(self):
         '''
         Returns all dependencies of the package found in selected repo
         '''
-        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src","--disablerepo=*",
-                                           "--enablerepo=" + type(self).repo, "--requires", self.package])
+        proc_data = subprocess_popen_call(["dnf", "repoquery", "--arch=src",
+                                          "--disablerepo=*", "--enablerepo=" + type(self).repo, 
+                                          "--requires", self.package])
         if proc_data['returncode']:
             if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(type(self).repo):
                 raise ex.UnknownRepoException('Repository {} is probably disabled'.format(type(self).repo))
         all_deps = set(proc_data['stdout'].splitlines()[1:])
         return all_deps
     
-    @property
-    def rpms_from_spec(self):
-        '''
-        Returns list of rpms created from spec_file
-        '''
-        rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
-        proc_data = subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
-                                                 "scl_prefix " + type(self).prefix, self.spec_file])
-        if proc_data['returncode']:
-            print(proc_data['stderr'])
-            raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])
-    #TODO stderr to log
-        rpms = proc_data['stdout'].splitlines()
-        return {rpm_pattern.search(x).groups()[0] for x in rpms}
-
     def download(self):
         '''
         Download srpm of package from selected repo using dnf.
@@ -142,15 +84,4 @@ class DnfArchive(object):
                 self.spec_file, self.pkg_dir))
              #TODO log message
         self.srpm_file = self.get_file('.src.rpm')
-
-    def get_file(self, suffix):
-        '''
-        Checks if file self.package.suffix exists in self.pkg_dir
-        returns file name on success
-        '''
-        name = glob.glob(self.pkg_dir + '*' + suffix)
-        if not name:
-            raise IOError("Failed to find {}".format(self.package + '*' + suffix))
-        else:
-            return name[0][len(self.pkg_dir):]
     

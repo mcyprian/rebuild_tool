@@ -16,7 +16,7 @@ def check_build(build_fce):
     def inner(self, package, verbose=True):
         if build_fce(self, package, verbose):
             self.built_packages.add(package)
-            self.built_rpms |= set(self.rpm_dict[package])
+            self.built_rpms |= set(self.pkg_source[package].rpms)
             return True
         else:
             raise BuildFailureException("Failed to build package {}.".format(package))

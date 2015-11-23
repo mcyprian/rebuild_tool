@@ -1,17 +1,16 @@
 from collections import UserDict
 
+from sclbuilder.pkg_source import PkgSrcArchive, set_class_attrs
 from sclbuilder.pkg_source_plugins.dnf import DnfArchive
 from sclbuilder.utils import ChangeDir, subprocess_popen_call
 from sclbuilder.exceptions import DownloadFailException
 
 class PkgsContainer(UserDict):
-    def add(self, package, pkg_dir, repo, prefix):
+    @set_class_attrs
+    def add(self, package, pkg_dir):
         '''
         Adds new KojiArchive object to self.data
         '''
-        if not DnfArchive.repo:
-            DnfArchive.repo = repo
-            DnfArchive.prefix = prefix
         self[package] = KojiArchive(package, pkg_dir)
 
 class KojiArchive(DnfArchive):

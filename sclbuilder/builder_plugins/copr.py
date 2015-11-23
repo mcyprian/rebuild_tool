@@ -30,13 +30,22 @@ class RealBuilder(builder.Builder):
             self.cl.create_project(self.project, self.chroots)
             # TODO try copr.client.exceptions.CoprRequestException: Unknown
             # arguments passed (non-existing chroot probably)
+        
+        if 'chroot_pkgs' in rebuild_metadata:
+            self.add_chroot_pkg(rebuild_metadata['chroot_pkgs'])
 
 
-        if 'chroot_pkgs' in rebuild_metadata.data:
-            for chroot in self.chroots:
-                self.cl.modify_project_chroot_details(self.project,
-                                                      chroot,
-                                                      pkgs=rebuild_metadata.data['chroot_pkgs'])
+    def add_chroot_pkg(self, chroot_pkgs):
+        '''
+        Method to add packages to minimal buildroot
+        '''
+        if not isinstance(chroot_pkgs, list):
+            chroot_pkgs = [chroot_pkgs]
+
+        for chroot in self.chroots:
+            self.cl.modify_project_chroot_details(self.project,
+                                                  chroot,
+                                                  pkgs=chroot_pkgs)
 
     def project_is_new(self):
         '''

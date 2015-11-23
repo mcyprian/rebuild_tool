@@ -26,7 +26,10 @@ class RebuildMetadata(UserDict):
         for attr in ['build_system', 'packages_source', 'repo', 'packages']:
             if attr not in self:
                 raise IncompleteMetadataException("Missing attribute {}.".format(attr))
- 
+
+        if 'metapackage' in self:
+            self['packages'].append(self['metapackage'])
+
         if not 'prefix' in self:
             self['prefix'] = ""
 

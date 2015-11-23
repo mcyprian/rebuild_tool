@@ -4,7 +4,7 @@ import logging
 import getpass
 from copr.client.exceptions import CoprNoConfException
 
-from sclbuilder.recipe import get_file_data, RebuildMetadata
+from sclbuilder.rebuild_metadata import get_file_data, RebuildMetadata
 from sclbuilder.exceptions import UnknownRepoException, IncompleteMetadataException
 from sclbuilder.builder_plugins import builder_loader
 from sclbuilder.pkg_source_plugins import pkg_source_loader

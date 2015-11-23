@@ -1,11 +1,11 @@
 import os
 import tempfile
 import shutil
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from subprocess import CalledProcessError
 
 from sclbuilder.graph import PackageGraph
-from sclbuilder.recipe import Recipe
+from sclbuilder.rebuild_metadata import Recipe
 from sclbuilder.exceptions import MissingRecipeException, BuildFailureException
 from sclbuilder import utils
 
@@ -30,6 +30,8 @@ class Builder(metaclass=ABCMeta):
     def __init__(self, rebuild_metadata, pkg_source):
         self.pkg_source = pkg_source
         self.packages = set(rebuild_metadata['packages'])
+        if 'metapackage' in rebuild_metadata:
+            self.metapackage = rebuild_metadata['metapackage']
         self.repo = rebuild_metadata['repo']
         self.prefix = rebuild_metadata['prefix']
         self.path = tempfile.mkdtemp()
@@ -137,6 +139,13 @@ class Builder(metaclass=ABCMeta):
         if (deps - recipe.packages) <= self.built_packages:
             return True
         return False
+    
+    @abstractmethod
+    def add_chroot_pkg(self, chroot_pkgs):
+        '''
+        Method to add packages to minimal buildroot
+        '''
+        pass
 
     @check_build
     def build(self, package, verbose=True):
@@ -144,11 +153,18 @@ class Builder(metaclass=ABCMeta):
             print("Building {0}...".format(package))
         return True
 
+
     def run_building(self):
         '''
         First builds all packages without deps, then iterates over num_of_deps
         and simulate building of packages in right order
         '''
+
+        # Build and add metapackage to chroots when rebuilding scl
+        if hasattr(self, 'metapackage'):
+            self.build(self.metapackage)
+            self.add_chroot_pkg([metapackage])
+
         if not self.num_of_deps:
             print("Nothing to build")
             return

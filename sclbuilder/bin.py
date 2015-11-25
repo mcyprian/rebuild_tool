@@ -16,7 +16,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('rebuild_file', nargs=1)
 @click.option('--visual / --no-visual',
-              default=True,
+              default=False,
               help='Enable / disable visualization of relations between pacakges')
 @click.option('--analyse',
               is_flag=True,
@@ -57,7 +57,7 @@ def main(rebuild_file, visual, analyse):
     except CoprNoConfException:
         print('Copr configuration file: ~/.config/copr not found')
         sys.exit(1)
-    if not analyse:
-        builder.run_building()
     if visual:
         builder.graph.show()
+    if not analyse:
+        builder.run_building()

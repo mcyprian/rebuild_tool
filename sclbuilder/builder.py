@@ -11,10 +11,13 @@ from sclbuilder import utils
 
 def check_build(build_fce):
     '''
-    Decorator to check if build was successfull or not
+    Decorator to check if build was successfull or not,
+    updates attributes and removes package from graph
     '''
     def inner(self, package, verbose=True):
         if build_fce(self, package, verbose):
+            if verbose: # not building recipe
+                self.graph.G.remove_node(package)
             self.built_packages.add(package)
             self.built_rpms |= set(self.pkg_source[package].rpms)
             return True
@@ -81,42 +84,12 @@ class Builder(metaclass=ABCMeta):
         Runs graph analysis and get dependance tree and circular_deps
         '''
         self.graph.make_graph()
-        (self.num_of_deps, self.circular_deps) = self.graph.analyse()
+        self.circular_deps = self.graph.get_cycles()
         if self.circular_deps and not self.recipes:
             raise MissingRecipeException("Missing recipes to resolve circular dependencies in graph.")
-        for circle in self.circular_deps:
-            self.all_circular_deps |= circle
+        for cycle in self.circular_deps:
+            self.all_circular_deps |= cycle
 
-
-    def build_ord_gen(self):
-        '''
-        Iterates over num_of_deps and build package that have all deps
-        satisfied
-        '''
-        while self.packages > self.built_packages:
-            for num in sorted(self.num_of_deps.keys()):
-                if num == 0:
-                    continue
-                for package in self.num_of_deps[num]:
-                    if package not in self.built_packages and self.deps_satisfied(package):
-                        yield (package, False)
- 
-    def build_ord_recipe_gen(self):
-        '''
-        Iterates over num_of_deps, building circular_deps using recipes
-        '''
-        while self.packages > self.built_packages:
-            for num in sorted(self.num_of_deps.keys()):
-                if num == 0:
-                    continue
-                for pkg in self.num_of_deps[num]:
-                    if pkg in self.built_packages:
-                        continue
-                    if pkg in self.all_circular_deps and\
-                        self.recipe_deps_satisfied(self.find_recipe(pkg)):
-                        yield (pkg, True)
-                    elif self.deps_satisfied(pkg):
-                        yield (pkg, False)
 
     def deps_satisfied(self, package):
         '''
@@ -163,27 +136,17 @@ class Builder(metaclass=ABCMeta):
         # Build and add metapackage to chroots when rebuilding scl
         if hasattr(self, 'metapackage'):
             self.build(self.metapackage)
-            self.add_chroot_pkg([metapackage])
+            self.add_chroot_pkg([self.metapackage])
 
-        if not self.num_of_deps:
-            print("Nothing to build")
-            return
-
-        # Builds all packages without deps
-        if 0 in self.num_of_deps.keys():
-            for package in self.num_of_deps[0]:
-                self.build(package)
-
-        if self.recipes:
-            build_ord_generator = self.build_ord_recipe_gen
-        else:
-            build_ord_generator = self.build_ord_gen
-
-        for pkg, recipe in build_ord_generator():
-            if recipe:
-                self.build_following_recipe(self.find_recipe(pkg))
+        while self.packages > self.built_packages:
+            zero_deps = self.graph.get_leaf_nodes()
+            if zero_deps:
+                for pkg in zero_deps:
+                    self.build(pkg)
             else:
-                self.build(pkg)
+                for recipe in self.recipes:
+                    if self.recipe_deps_satisfied(recipe):
+                        self.build_following_recipe(recipe)
 
     def find_recipe(self, package):
         '''
@@ -210,8 +173,10 @@ class Builder(metaclass=ABCMeta):
                 utils.edit_bootstrap(self.pkg_source[name].spec_file, macro, value)
                 self.pkg_source[name].pack()
             self.build(step[0], False)
- 
-#TODO move to PkgsContainer ?
+        for pkg in {step[0] for step in recipe.order}:
+            self.graph.G.remove_node(pkg)
+        self.recipes.remove(recipe)
+
     def get_files(self):
         '''
         Creates SrpmArchive object and downloads files for each package

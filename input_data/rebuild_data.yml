@@ -1,15 +1,17 @@
 build_system: copr
-copr_project: sclbuilder-test
+copr_project: sclbuilder-test3
 chroots: [fedora-23-x86_64]
 
 packages_source: dnf
 
 repo: rhscl-rh-python34-epel-7-x86_64
-recipes: [/home/mcyprian/Codes/devel/sclbuilder/test_data/recipe1.yml,
-           /home/mcyprian/Codes/devel/sclbuilder/test_data/recipe2.yml]
+recipes: [/home/mcyprian/Codes/devel/sclbuilder/input_data/recipe1.yml,
+           /home/mcyprian/Codes/devel/sclbuilder/input_data/recipe2.yml]
+
 prefix: rh-python34-
-packages: [rh-python34,
-           rh-python34-babel,
+metapackage: rh-python34
+
+packages: [rh-python34-babel,
            rh-python34-mod_wsgi,
            rh-python34-numpy,
            rh-python34-python,
@@ -31,4 +33,4 @@ packages: [rh-python34,
            rh-python34-python-wheel,
            rh-python34-scipy]
 
-chroot_pkgs: ['scl-utils-build', 'rh-python34-build']
+chroot_pkgs: ['scl-utils-build']

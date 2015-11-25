@@ -15,7 +15,6 @@ class PackageGraph(object):
         self.repo = repo
         self.rpms = set()
         self.pkg_source = pkg_source
-        self.processed_packages = set()
         self.G = nx.DiGraph()
 
     def make_graph(self):
@@ -36,25 +35,15 @@ class PackageGraph(object):
         pacakge was not processes before. When recursive is True
         calls itself for each of dependancies.
         '''
-        if package in self.processed_packages:
-            return
-        else:
-            print(package)
-            self.G.add_node(package)
-            self.processed_packages.add(package)
-            for dep in self.pkg_source[package].dependencies & self.rpms:
-                self.G.add_edge(package, self.find_package(dep))
+        print(package)
+        self.G.add_node(package)
+        for dep in self.pkg_source[package].dependencies & self.rpms:
+            self.G.add_edge(package, self.find_package(dep))
 
-    def analyse(self):
+    def get_cycles(self):
         '''
-        Creates dictionary of packages, keys of the dictionaty are
-        numbers of dependancies, values are names of the packages,
-        packages with circular dependancies are stored in special set
+        Finds circular dependencies and returns set of all cycles
         '''
-        num_of_deps = {}
-        for node in self.G.nodes():
-            print(node)
-            update_key(num_of_deps, len(self.G.successors(node)), self.find_package(node))
         cycles = [set(x) for x in nx.simple_cycles(self.G)]
 
         # Removes subsets of other sets in circular_deps
@@ -63,16 +52,13 @@ class PackageGraph(object):
                 remove_if_present(cycles, b)
             elif b > a:
                 remove_if_present(cycles, a)
-        print(cycles)
+        
         circular_deps = [x for n, x in enumerate(cycles) if x not in cycles[:n]]
 
-        print("\nPackages to build:")
-        for num in sorted(num_of_deps.keys()):
-            print("deps {}   {}".format(num, num_of_deps[num]))
         print("\nCircular dependancies: {}")
         pp = pprint.PrettyPrinter(depth=6)
         pp.pprint(circular_deps)
-        return (num_of_deps, circular_deps)
+        return circular_deps
 
     def find_package(self, rpm):
         for package in self.pkg_source.keys():
@@ -92,6 +78,12 @@ class PackageGraph(object):
         nx.draw(self.G, pos, node_size=12000, with_labels=True,
                 node_color="#1F9EDE", alpha=0.9)
         plt.show()
+
+    def get_leaf_nodes(self):
+        '''
+        Returns list of leaf nodes in graph
+        '''
+        return [x for x in self.G.nodes_iter() if self.G.out_degree(x) == 0]
 
 def remove_if_present(ls, value):
     if value in ls:

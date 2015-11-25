@@ -1,16 +1,17 @@
 build_system: copr
-copr_project: python35-rebuild
-chroots: [fedora-rawhide-x86_64]
+copr_project: python35-rebuild2
+chroots: [fedora-23-x86_64]
 
 packages_source: koji
 
 repo: rawhide-source
-recipes: [/home/mcyprian/Codes/devel/sclbuilder/test_data/recipe1_py35.yml,
-          /home/mcyprian/Codes/devel/sclbuilder/test_data/recipe2_py35.yml]
+recipes: [/home/mcyprian/Codes/devel/sclbuilder/input_data/recipe1_py35.yml,
+          /home/mcyprian/Codes/devel/sclbuilder/input_data/recipe2_py35.yml]
 
 packages: [gdb,
            python3,
            python-setuptools,
+           pyparsing,
            python-pip,
            python-wheel,
            python-docutils,

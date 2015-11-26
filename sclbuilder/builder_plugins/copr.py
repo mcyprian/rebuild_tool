@@ -1,4 +1,5 @@
 import time
+import pprint
 from copr.client import CoprClient
 from copr.client.exceptions import CoprRequestException
 
@@ -43,9 +44,7 @@ class RealBuilder(builder.Builder):
             chroot_pkgs = [chroot_pkgs]
 
         for chroot in self.chroots:
-            self.cl.modify_project_chroot_details(self.project,
-                                                  chroot,
-                                                  pkgs=chroot_pkgs)
+            self.cl.modify_project_chroot_details(self.project, chroot, pkgs=chroot_pkgs)
 
     def project_is_new(self):
         '''
@@ -58,23 +57,28 @@ class RealBuilder(builder.Builder):
         return True
 
     @builder.check_build
-    def build(self, package, verbose=True):
+    def build(self, pkgs, verbose=True):
         '''
         Building package using copr api, periodicaly checking
         build status while build is not finished
         '''
+        srpms = [self.pkg_source[x].srpm_file for x in pkgs]
         if verbose:
-            print("Building {}".format(package))
-        result = self.cl.create_new_build(self.project,
-                                          pkgs=[self.pkg_source[package].srpm_file],
-                                          chroots=self.chroots)
+            print("Building {}".format(pkgs))
+        result = self.cl.create_new_build(self.project, pkgs=srpms, chroots=self.chroots)
 
-        while True:
-            status = result.builds_list[0].handle.get_build_details().status
-            if status in ["skipped", "failed", "succeeded"]:
-                break
-            time.sleep(10)
-        if status == 'succeeded':
-            return True
-        else:
-            return False
+        watched = set(result.builds_list)
+        done = {}
+
+        while watched != set(done.keys()):
+            for bw in watched - set(done.keys()):
+                status = bw.handle.get_build_details().status
+                if status in ["skipped", "failed", "succeeded"]:
+                    done[bw] = status
+            time.sleep(1)
+        
+        pprint.pprint(done)
+        for status in done.values():
+            if status != 'succeeded':
+                return False
+        return True

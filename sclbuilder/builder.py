@@ -14,15 +14,17 @@ def check_build(build_fce):
     Decorator to check if build was successfull or not,
     updates attributes and removes package from graph
     '''
-    def inner(self, package, verbose=True):
-        if build_fce(self, package, verbose):
-            if verbose: # not building recipe
-                self.graph.G.remove_node(package)
-            self.built_packages.add(package)
-            self.built_rpms |= set(self.pkg_source[package].rpms)
+    def inner(self, pkgs, verbose=True):
+        if not isinstance(pkgs, list):
+            pkgs = [pkgs]
+        if build_fce(self, pkgs, verbose):
+            for pkg in pkgs:
+                if verbose: # not building recipe
+                    self.graph.G.remove_node(pkg)
+                self.built_packages.add(pkg)
             return True
         else:
-            raise BuildFailureException("Failed to build package {}.".format(package))
+            raise BuildFailureException("Failed to build packages {}.".format(pkgs))
     return inner
 
 
@@ -39,10 +41,8 @@ class Builder(metaclass=ABCMeta):
         self.prefix = rebuild_metadata['prefix']
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
-        self.built_rpms = set()
         self.num_of_deps = {}
         self.circular_deps = []
-        self.all_circular_deps = set()
         self.get_files()
         self.graph = PackageGraph(self.repo, self.pkg_source)
         try:
@@ -87,9 +87,6 @@ class Builder(metaclass=ABCMeta):
         self.circular_deps = self.graph.get_cycles()
         if self.circular_deps and not self.recipes:
             raise MissingRecipeException("Missing recipes to resolve circular dependencies in graph.")
-        for cycle in self.circular_deps:
-            self.all_circular_deps |= cycle
-
 
     def deps_satisfied(self, package):
         '''
@@ -121,9 +118,10 @@ class Builder(metaclass=ABCMeta):
         pass
 
     @check_build
-    def build(self, package, verbose=True):
-        if verbose:
-            print("Building {0}...".format(package))
+    def build(self, pkgs, verbose=True):
+        for pkg in pkgs:
+            if verbose:
+                print("Building {0}...".format(package))
         return True
 
 
@@ -135,14 +133,13 @@ class Builder(metaclass=ABCMeta):
 
         # Build and add metapackage to chroots when rebuilding scl
         if hasattr(self, 'metapackage'):
-            self.build(self.metapackage)
+            self.build([self.metapackage])
             self.add_chroot_pkg([self.metapackage])
 
         while self.packages > self.built_packages:
             zero_deps = self.graph.get_leaf_nodes()
             if zero_deps:
-                for pkg in zero_deps:
-                    self.build(pkg)
+                self.build(zero_deps)
             else:
                 for recipe in self.recipes:
                     if self.recipe_deps_satisfied(recipe):
@@ -172,7 +169,7 @@ class Builder(metaclass=ABCMeta):
                 utils.check_bootstrap_macro(self.pkg_source[name].spec_file, macro)
                 utils.edit_bootstrap(self.pkg_source[name].spec_file, macro, value)
                 self.pkg_source[name].pack()
-            self.build(step[0], False)
+            self.build([step[0]], False)
         for pkg in {step[0] for step in recipe.order}:
             self.graph.G.remove_node(pkg)
         self.recipes.remove(recipe)

@@ -56,8 +56,7 @@ class PackageGraph(object):
         circular_deps = [x for n, x in enumerate(cycles) if x not in cycles[:n]]
 
         print("\nCircular dependancies: {}")
-        pp = pprint.PrettyPrinter(depth=6)
-        pp.pprint(circular_deps)
+        pprint.pprint(circular_deps)
         return circular_deps
 
     def find_package(self, rpm):

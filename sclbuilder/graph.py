@@ -2,9 +2,12 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import itertools
 import pprint
+import logging
 
 from sclbuilder.utils import subprocess_popen_call
 import sclbuilder.exceptions as ex
+
+logger = logging.getLogger(__name__)
 
 class PackageGraph(object):
     '''
@@ -24,7 +27,7 @@ class PackageGraph(object):
         '''
         for package in self.pkg_source.values():
             self.rpms |= package.rpms
-        print("Processing package:")
+
         for package in self.pkg_source.keys():
             self.process_deps(package)
 
@@ -35,7 +38,9 @@ class PackageGraph(object):
         pacakge was not processes before. When recursive is True
         calls itself for each of dependancies.
         '''
-        print(package)
+        logger.debug("Dependencies of package {}: {}.".format(
+              package, self.pkg_source[package].dependencies))
+
         self.G.add_node(package)
         for dep in self.pkg_source[package].dependencies & self.rpms:
             self.G.add_edge(package, self.find_package(dep))
@@ -55,6 +60,7 @@ class PackageGraph(object):
         
         circular_deps = [x for n, x in enumerate(cycles) if x not in cycles[:n]]
 
+        logger.debug("Circular dependencies: {}".format(circular_deps))
         print("\nCircular dependancies: {}")
         pprint.pprint(circular_deps)
         return circular_deps
@@ -63,7 +69,8 @@ class PackageGraph(object):
         for package in self.pkg_source.keys():
             if rpm in self.pkg_source[package].rpms:
                 return package
-        print("NOT FOUND {}".format(rpm)) # TODO Handle exception if package not found
+        
+        logger.warn("Srpm of {} not found.".format(rpm)) #TODO Handle exception if package not found
 
     def show(self):
         '''

@@ -1,7 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 from setuptools import setup
+from setuptools.command.test import test as TestCommand
+
+class PyTest(TestCommand):
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
 
 description = "Tool to plan order of packages building in Software Collections"
 "creation. Finds all dependancies of the packagesi, prints order of building"
@@ -22,6 +35,10 @@ setup(
                       'networkx',
                       'matplotlib',
                       'copr'],
+    setup_requires=['setuptools',
+                    'flexmock',
+                    'pytest'],
+    cmdclass={'test': PyTest},
     classifiers=['Development Status :: 2 - Pre-Alpha',
                  'Environment :: Console',
                  'Intended Audience :: Developers',

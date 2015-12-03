@@ -15,3 +15,6 @@ class BuildFailureException(BaseException):
 
 class IncompleteMetadataException(BaseException):
     pass
+
+class UnknownPluginException(BaseException):
+    pass

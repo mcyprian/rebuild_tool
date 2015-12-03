@@ -18,7 +18,6 @@ class DnfArchive(PkgSrcArchive):
     '''
     Contains methods to download from dnf, unpack, edit and pack srpm
     '''
-
     @property
     def dependencies(self):
         '''

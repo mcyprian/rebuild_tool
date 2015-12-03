@@ -34,6 +34,9 @@ class PkgSrcArchive(metaclass=ABCMeta):
         self.pack()
         self.rpms = self.rpms_from_spec
 
+    def __repr__(self):
+        return "pacakage: {} rpms: {}".format(self.package, self.rpms)
+
     @property
     def pkg_dir(self):
         return self._pkg_dir

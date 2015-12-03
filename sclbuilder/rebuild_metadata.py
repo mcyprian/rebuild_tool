@@ -1,7 +1,9 @@
 import yaml
 from collections import UserDict
 
-from sclbuilder.exceptions import IncompleteMetadataException
+from sclbuilder.exceptions import IncompleteMetadataException, UnknownPluginException
+from sclbuilder.builder_plugins.builder_loader import available_builder_plugins
+from sclbuilder.pkg_source_plugins.pkg_source_loader import available_pkg_source_plugins
 
 def get_file_data(input_file, split=False):
     '''
@@ -27,6 +29,14 @@ class RebuildMetadata(UserDict):
             if attr not in self:
                 raise IncompleteMetadataException("Missing attribute {}.".format(attr))
 
+        if self['build_system'] not in available_builder_plugins:
+            raise UnknownPluginException("Builder plugin {} not available.".format(
+                                         self['build_system']))
+        
+        if self['packages_source'] not in available_pkg_source_plugins:
+            raise UnknownPluginException("Packages source  plugin {} not available.".format(
+                                         self['packages_source']))
+
         if 'metapackage' in self:
             self['packages'].append(self['metapackage'])
 
@@ -43,9 +53,9 @@ class Recipe(yaml.YAMLObject):
     '''
     Class to store order of building recipe, reads data from
     yml file in format:
-        - ['package1', with_var n]
+        - ['package1', 'bootstrap 0']
         - ['package2']
-        - ['package1', 'with_var n']
+        - ['package1', 'bootstrap 1']
         ...
     '''
     def __init__(self, recipe_file):

@@ -57,7 +57,7 @@ def main(rebuild_file, visual, analyse):
     except CoprNoConfException:
         print('Copr configuration file: ~/.config/copr not found')
         sys.exit(1)
-    if visual:
+    if visual or analyse:
         builder.graph.show()
     if not analyse:
         builder.run_building()

@@ -63,11 +63,19 @@ class RealBuilder(builder.Builder):
         build status while build is not finished
         '''
         srpms = [self.pkg_source[x].srpm_file for x in pkgs]
+        results = []
+
         if verbose:
             print("Building {}".format(pkgs))
-        result = self.cl.create_new_build(self.project, pkgs=srpms, chroots=self.chroots)
-
-        watched = set(result.builds_list)
+       
+        for pkg in srpms:
+            results.append(self.cl.create_new_build(self.project, pkgs=[pkg],
+                                                       chroots=self.chroots))
+        watched = []
+        for result in results:
+            watched += result.builds_list
+        
+        watched = set(watched)
         done = {}
 
         while watched != set(done.keys()):

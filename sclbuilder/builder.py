@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+import logging
 from abc import ABCMeta, abstractmethod
 from subprocess import CalledProcessError
 
@@ -8,6 +9,8 @@ from sclbuilder.graph import PackageGraph
 from sclbuilder.rebuild_metadata import Recipe
 from sclbuilder.exceptions import MissingRecipeException, BuildFailureException
 from sclbuilder import utils
+
+logger = logging.getLogger(__name__)
 
 def check_build(build_fce):
     '''
@@ -48,7 +51,7 @@ class Builder(metaclass=ABCMeta):
         try:
             self.recipes = rebuild_metadata['recipes']
         except IOError:
-            print("Failed to load recipe {0}.".format(rebuild_metadata['recipes']))
+            logger.error("Failed to load recipe {0}.".format(rebuild_metadata['recipes']))
 
     def __del__(self):
         shutil.rmtree(self.path)
@@ -183,5 +186,5 @@ class Builder(metaclass=ABCMeta):
                 pkg_dir = self.path + package
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
-                print("Getting files of {0}.".format(package))
+                logger.debug("Getting files of {0}.".format(package))
                 self.pkg_source.add(package, pkg_dir, self.repo, self.prefix)

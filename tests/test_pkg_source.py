@@ -5,7 +5,7 @@ import os
 import shutil
 
 
-import sclbuilder.utils
+from sclbuilder.utils import subprocess_popen_call
 from sclbuilder.pkg_source_plugins.dnf import DnfArchive
 
 tests_dir = os.path.split(os.path.abspath(__file__))[0]
@@ -38,6 +38,7 @@ class TestPkgSource(object):
 #        flexmock(DnfArchive).should_receive('download').once()
 #        flexmock(DnfArchive).should_receive('pack').once()
 #        flexmock(DnfArchive).should_receive('unpack').once()
-#        flexmock(sys.modules['sclbuilder.utils']).should_receive('subprocess_popen_call').and_return({'stdout' : srpms})
+#        flexmock(sys.modules[__name__]).should_receive('subprocess_popen_call')\
+#        .and_return({'stdout' : srpms})
 #        pkg_source = DnfArchive('pkg', 'dir')
 #        assert pkg_source.rpms_from_spec == expected

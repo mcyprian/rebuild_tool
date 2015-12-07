@@ -1,6 +1,6 @@
 build_system: copr
 copr_project: python35-rebuild2
-chroots: [fedora-23-x86_64]
+chroots: [fedora-rawhide-x86_64]
 
 packages_source: koji
 

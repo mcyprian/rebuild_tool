@@ -4,5 +4,8 @@
 *.swp
 *.swn
 *~
+.eggs
+.tox
 build/
 dist/
+sclbuilder.egg-info

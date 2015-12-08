@@ -42,6 +42,7 @@ class Builder(metaclass=ABCMeta):
             self.metapackage = rebuild_metadata['metapackage']
         self.repo = rebuild_metadata['repo']
         self.prefix = rebuild_metadata['prefix']
+        self.koji_tag = rebuild_metadata['koji_tag']
         self.path = tempfile.mkdtemp()
         self.built_packages = set()
         self.num_of_deps = {}
@@ -187,4 +188,4 @@ class Builder(metaclass=ABCMeta):
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
                 logger.debug("Getting files of {0}.".format(package))
-                self.pkg_source.add(package, pkg_dir, self.repo, self.prefix)
+                self.pkg_source.add(package, pkg_dir, self.repo, self.prefix, self.koji_tag)

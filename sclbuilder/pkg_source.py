@@ -11,10 +11,11 @@ def set_class_attrs(add_fce):
     Decorator to set class attributes repo and prefix
     before first addition of pkg source class to container
     '''
-    def inner(self, package, pkg_dir, repo, prefix):
+    def inner(self, package, pkg_dir, repo, prefix, koji_tag=None):
         if not PkgSrcArchive.repo:
             PkgSrcArchive.repo = repo
             PkgSrcArchive.prefix = prefix
+            PkgSrcArchive.koji_tag = koji_tag
         add_fce(self, package, pkg_dir)
     return inner
 
@@ -24,6 +25,7 @@ class PkgSrcArchive(metaclass=ABCMeta):
     '''
     repo = None
     prefix = None
+    koji_tag = None
 
     def __init__(self, package, pkg_dir, srpm_file=None):
         self.pkg_dir = pkg_dir

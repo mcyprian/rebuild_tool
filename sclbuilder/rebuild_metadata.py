@@ -48,6 +48,12 @@ class RebuildMetadata(UserDict):
                 if not isinstance(self[attr], list):
                     self[attr] = [self[attr]]
 
+        if self['packages_source'] == 'koji': 
+            if 'koji_tag' not in self:
+                raise IncompleteMetadataException("Missing attribute koji_tag necesary to get srpms from koji.")
+        else:
+            self['koji_tag'] = None
+
 
 class Recipe(yaml.YAMLObject):
     '''

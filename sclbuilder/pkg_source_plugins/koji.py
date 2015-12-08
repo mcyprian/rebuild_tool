@@ -25,9 +25,8 @@ class KojiArchive(DnfArchive):
         with ChangeDir(self.pkg_dir):
             proc_data = subprocess_popen_call(["koji", "download-build",
                                                "--arch=src",
-                                               "--latestfrom=f24-python3",
+                                               "--latestfrom=" + type(self).koji_tag,
                                                self.package])
-            # TODO --latestfrom= TAG
             if proc_data['returncode']:
                 raise DownloadFailException(proc_data['stderr'])
 

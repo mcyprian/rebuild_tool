@@ -5,6 +5,7 @@ chroots: [fedora-rawhide-x86_64]
 packages_source: koji
 
 repo: rawhide-source
+koji_tag: f24-python3
 recipes: [/home/mcyprian/Codes/devel/sclbuilder/input_data/recipe1_py35.yml,
           /home/mcyprian/Codes/devel/sclbuilder/input_data/recipe2_py35.yml]
 

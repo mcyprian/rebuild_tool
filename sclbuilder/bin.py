@@ -20,8 +20,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help='Enable / disable visualization of relations between pacakges')
 @click.option('--analyse',
               is_flag=True,
-              help='Analyse relations between packages and print circular'
-              'dependencies, disable execution of building')
+              help='Analyse relations between packages and print circular '
+              'dependencies, disable execution of builds')
 
 def main(rebuild_file, visual, analyse):
     register_file_log_handler('/tmp/sclbulider-{0}.log'.format(getpass.getuser()))

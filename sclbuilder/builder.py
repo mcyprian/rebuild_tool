@@ -170,8 +170,8 @@ class Builder(metaclass=ABCMeta):
                 (name, macro_value) = step
                 print("Building package {0} {1}".format(name, macro_value))
                 (macro, value) = macro_value.split(' ')
-                utils.check_bootstrap_macro(self.pkg_source[name].spec_file, macro)
-                utils.edit_bootstrap(self.pkg_source[name].spec_file, macro, value)
+                utils.check_bootstrap_macro(self.pkg_source[name].full_path_spec, macro)
+                utils.edit_bootstrap(self.pkg_source[name].full_path_spec, macro, value)
                 self.pkg_source[name].pack()
             self.build([step[0]], False)
         for pkg in {step[0] for step in recipe.order}:

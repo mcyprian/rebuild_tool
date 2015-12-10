@@ -4,7 +4,7 @@ import re
 from subprocess import CalledProcessError
 from abc import ABCMeta, abstractmethod
 
-from sclbuilder.utils import subprocess_popen_call
+from sclbuilder import utils
 
 def set_class_attrs(add_fce):
     '''
@@ -27,10 +27,11 @@ class PkgSrcArchive(metaclass=ABCMeta):
     prefix = None
     koji_tag = None
 
-    def __init__(self, package, pkg_dir, srpm_file=None):
+    def __init__(self, package, pkg_dir, srpm_file=None, spec_file=None):
         self.pkg_dir = pkg_dir
         self.package = package
         self.srpm_file = srpm_file
+        self.spec_file = spec_file
         self.download()
         self.unpack()
         self.pack()
@@ -53,20 +54,12 @@ class PkgSrcArchive(metaclass=ABCMeta):
             self._pkg_dir = path + '/'
 
     @property
-    def spec_file(self):
-        return self._pkg_dir + self.__spec_file
-
-    @spec_file.setter
-    def spec_file(self, name):
-        self.__spec_file = name
+    def full_path_spec(self):
+        return self._pkg_dir + self.spec_file
 
     @property
-    def srpm_file(self):
-        return self._pkg_dir + self.__srpm_file
-
-    @srpm_file.setter
-    def srpm_file(self, name):
-        self.__srpm_file = name
+    def full_path_srpm(self):
+        return self._pkg_dir + self.srpm_file
 
     def get_file(self, suffix):
         '''
@@ -85,7 +78,7 @@ class PkgSrcArchive(metaclass=ABCMeta):
         Returns list of rpms created from spec_file
         '''
         rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
-        proc_data = subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
+        proc_data = utils.subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
                                                  "scl_prefix " + type(self).prefix, self.spec_file])
         if proc_data['returncode']:
             print(proc_data['stderr'])

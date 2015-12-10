@@ -9,7 +9,7 @@ from sclbuilder.builder import Builder
 from sclbuilder.graph import PackageGraph
 from sclbuilder.pkg_source_plugins.dnf import DnfArchive
 from sclbuilder.exceptions import MissingRecipeException
-from sclbuilder.utils import check_bootstrap_macro, edit_bootstrap
+from sclbuilder import utils 
 
 tests_dir = os.path.split(os.path.abspath(__file__))[0]
 
@@ -17,11 +17,13 @@ metadata = {"packages" : ['pkg1', 'pkg2', 'pkg3', 'pkg4'],
                     "repo" : 'rawhide',
                     "prefix" : "",
                     "recipes" : ["{}/test_data/recipe.yml".format(tests_dir)],
+                    "koji_tag" : 'f24-python3',
                     "copr_project": "project",
                     "chroots" : 'f23'}
 
 fake_archive = flexmock(
-    spec_file = 'path/to/spec'
+    full_path_spec = 'path/to/spec',
+    pack = lambda: "packing"
 )
 
 pkg_source = {'pkg1' : fake_archive,
@@ -82,13 +84,11 @@ class TestBuilder(object):
             assert builder.find_recipe(pkg).packages == expected
        
 
-#    def test_build_following_recipe(self):
-#        builder = create_mocked_builder()
-#        flexmock(RealBuilder).should_receive('build').with_args('pkg1').twice()
-#        flexmock(RealBuilder).should_receive('build').with_args('pkg2').once()
-#        flexmock(sys.modules[__name__]).should_receive('check_bootstrap_macro').twice()
-#        flexmock(sys.modules[__name__]).should_receive('edit_bootstrap').twice()
-#        flexmock(DnfArchive).should_receive('pack').twice()
-#        flexmock(builder.graph.G).should_receive('remove_node').times(3)
-#        builder.build_following_recipe(builder.recipes[0])
-#
+    def test_build_following_recipe(self):
+        builder = create_mocked_builder()
+        flexmock(RealBuilder).should_receive('build').times(3)
+        flexmock(utils).should_receive('check_bootstrap_macro').twice()
+        flexmock(utils).should_receive('edit_bootstrap').twice()
+        flexmock(builder.graph.G).should_receive('remove_node').times(2)
+        builder.build_following_recipe(builder.recipes[0])
+

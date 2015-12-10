@@ -29,7 +29,7 @@ class TestRebuildMetadata(object):
 
     @pytest.mark.parametrize(('key', 'value'), [
         ('build_system', 'copr'),
-        ('packages_source', 'koji'),
+        ('packages_source', 'dnf'),
         ('repo', 'rawhide'),
         ('packages', ['pkg1', 'pkg2', 'metapkg']),
         ('recipes', ['path/recipe']),
@@ -38,7 +38,7 @@ class TestRebuildMetadata(object):
     def test_good_data(self, key, value):
         yaml_data = '''
             build_system: copr
-            packages_source: koji
+            packages_source: dnf
             repo: rawhide
             recipes: path/recipe
             packages: [pkg1, pkg2]

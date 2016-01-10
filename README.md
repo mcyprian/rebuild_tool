@@ -1,11 +1,11 @@
 ===================
 sclbuilder
 ===================
-Tool to rebuild list of packages and Software collections.
+Tool to rebuild lists of packages and Software collections.
 
-Finds dependancies of the packages, creates directed graph of realations and analyse it.
+Finds dependancies of the packages, creates directed graph of relations and analyse it.
 Tool gets rebuild metadata: list of packages, source of packages (srpms), build system... 
-from Rebuild file and builds them in the right order.
+from Rebuild file and builds the packages in the right order.
 
 In case list of packages (scl) includes circular dependecies rebuild tool needs special files
 called "recipes" to resolve them.
@@ -21,16 +21,17 @@ Usage: mybin.py [OPTIONS] REBUILD_FILE
     
 ## Rebuild file
 
-All data about rebuild are specified in this file:
+All data needed to rebuild are specified in this file.
+
+Table of required and optional items of the file:
     
     **item**       |**Description**                       |**Available plugins** | **Required**
     ---------------|--------------------------------------|----------------------|--------------
     build_system   | system to execute builds             |  copr                |   YES
     packages_source| source of srpms                      |  dnf, koji           |   YES
-    repo           | repository that will be used to get dependecies |           |   YES
+    repo           | repository to get dependecies from |           |   YES
     packages       | list of packages                     |                      |   YES
-    recipes        | list of recipe files to resolve circular dependecies
-     |NO
+    recipes        | list of recipe files to resolve circular dependecies |   |NO
     metapackage    | metapackage of scl                   |                  |SCL_ONLY
     prefix         | prefix of scl                        |                  |SCL_ONLY
 
@@ -38,7 +39,7 @@ All data about rebuild are specified in this file:
 Example of Rebuild file:
 ```
 build_system: copr
-copr_project: python35-rebuild2
+copr_project: python35-rebuild
 chroots: [fedora-rawhide-x86_64]
 
 packages_source: koji

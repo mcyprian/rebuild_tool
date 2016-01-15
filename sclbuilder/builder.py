@@ -184,7 +184,7 @@ class Builder(metaclass=ABCMeta):
         '''
         with utils.ChangeDir(self.path):
             for package in self.packages:
-                pkg_dir = self.path + package
+                pkg_dir = self.path + package + "_files/"
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
                 logger.debug("Getting files of {0}.".format(package))

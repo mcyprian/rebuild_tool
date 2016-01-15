@@ -79,7 +79,8 @@ class PkgSrcArchive(metaclass=ABCMeta):
         '''
         rpm_pattern = re.compile("(^.*?)-\d+.\d+.*$")
         proc_data = utils.subprocess_popen_call(["rpm", "-q", "--specfile", "--define",
-                                                 "scl_prefix " + type(self).prefix, self.spec_file])
+                                                 "scl_prefix " + type(self).prefix,
+                                                 self.full_path_spec])
         if proc_data['returncode']:
             print(proc_data['stderr'])
             raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])

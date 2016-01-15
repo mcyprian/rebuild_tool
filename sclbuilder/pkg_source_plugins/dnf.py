@@ -36,17 +36,16 @@ class DnfArchive(PkgSrcArchive):
         '''
         Download srpm of package from selected repo using dnf.
         '''
-        proc_data = subprocess_popen_call(["dnf", "download", "--disablerepo=*", 
-                                           "--enablerepo=" + type(self).repo,
-                                           "--destdir", self.pkg_dir,
-                                           "--source", self.package])
-
+        proc_data = subprocess_popen_call(["dnf", "download", "--disablerepo=*",
+                      "--enablerepo=" + type(self).repo,
+                      "--destdir", self.pkg_dir,
+                      "--source", self.package])
+        
         if proc_data['returncode']:
             if proc_data['stderr'] == "Error: Unknown repo: '{0}'\n".format(type(self).repo):
                 raise ex.UnknownRepoException('Repository {} is probably disabled'.format(type(self).repo))
-        elif proc_data['stderr']:
-            raise ex.DownloadFailException(proc_data['stderr'])
-
+            else:
+                raise ex.DownloadFailException(proc_data['stderr'])
         self.srpm_file = self.get_file('.src.rpm')
 
     def unpack(self):

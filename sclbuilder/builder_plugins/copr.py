@@ -62,7 +62,7 @@ class RealBuilder(builder.Builder):
         Building package using copr api, periodicaly checking
         build status while build is not finished
         '''
-        srpms = [self.pkg_source[x].srpm_file for x in pkgs]
+        srpms = [self.pkg_source[x].full_path_srpm for x in pkgs]
         results = []
 
         if verbose:

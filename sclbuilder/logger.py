@@ -4,7 +4,7 @@ import os
 logger = logging.getLogger('sclbuilder')
 logger.setLevel(logging.DEBUG)
 
-file_formatter = logging.Formatter(u'%(asctime)s::%(name)s::%(levelname)s::%(message)s')
+file_formatter = logging.Formatter(u'%(name)s::%(levelname)s::%(message)s')
 
 def register_file_log_handler(log_file, level=logging.DEBUG, fmt=file_formatter):
     dirname = os.path.dirname(log_file)

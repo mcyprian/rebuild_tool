@@ -3,7 +3,6 @@ import tempfile
 import shutil
 import logging
 from abc import ABCMeta, abstractmethod
-from subprocess import CalledProcessError
 
 from sclbuilder.graph import PackageGraph
 from sclbuilder.rebuild_metadata import Recipe
@@ -113,7 +112,7 @@ class Builder(metaclass=ABCMeta):
         if (deps - recipe.packages) <= self.built_packages:
             return True
         return False
-    
+
     @abstractmethod
     def add_chroot_pkg(self, chroot_pkgs):
         '''
@@ -125,7 +124,7 @@ class Builder(metaclass=ABCMeta):
     def build(self, pkgs, verbose=True):
         for pkg in pkgs:
             if verbose:
-                print("Building {0}...".format(package))
+                print("Building {0}...".format(pkg))
         return True
 
 
@@ -187,5 +186,6 @@ class Builder(metaclass=ABCMeta):
                 pkg_dir = self.path + package + "_files/"
                 if not os.path.exists(pkg_dir):
                     os.mkdir(pkg_dir)
+                print("Getting files of {0}.".format(package))
                 logger.debug("Getting files of {0}.".format(package))
                 self.pkg_source.add(package, pkg_dir, self.repo, self.prefix, self.koji_tag)

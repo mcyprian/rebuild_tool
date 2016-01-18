@@ -39,7 +39,7 @@ class PackageGraph(object):
         calls itself for each of dependancies.
         '''
         logger.debug("Dependencies of package {}: {}.".format(
-              package, self.pkg_source[package].dependencies))
+            package, self.pkg_source[package].dependencies))
 
         self.G.add_node(package)
         for dep in self.pkg_source[package].dependencies & self.rpms:
@@ -57,7 +57,7 @@ class PackageGraph(object):
                 remove_if_present(cycles, b)
             elif b > a:
                 remove_if_present(cycles, a)
-        
+
         circular_deps = [x for n, x in enumerate(cycles) if x not in cycles[:n]]
 
         logger.debug("Circular dependencies: {}".format(circular_deps))

@@ -82,9 +82,7 @@ class PkgSrcArchive(metaclass=ABCMeta):
                                                  "scl_prefix " + type(self).prefix,
                                                  self.full_path_spec])
         if proc_data['returncode']:
-            print(proc_data['stderr'])
             raise CalledProcessError(cmd='rpm', returncode=proc_data['returncode'])
-    #TODO stderr to log
         rpms = proc_data['stdout'].splitlines()
         return {rpm_pattern.search(x).groups()[0] for x in rpms}
 

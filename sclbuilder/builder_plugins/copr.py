@@ -1,10 +1,9 @@
 import time
 import pprint
 from copr.client import CoprClient
-from copr.client.exceptions import CoprRequestException
 
 from sclbuilder import builder
-from sclbuilder.exceptions import BuildFailureException, IncompleteMetadataException
+from sclbuilder.exceptions import IncompleteMetadataException
 
 
 def check_metadata(rebuild_metadata):
@@ -15,7 +14,7 @@ def check_metadata(rebuild_metadata):
     for attr in ['copr_project', 'chroots']:
         if attr not in rebuild_metadata:
             raise IncompleteMetadataException(
-                "Missing attribute {} necessary for Copr builds.".format(attr))
+                "Missing Rebuild file attribute: {} necessary for Copr builds.".format(attr))
 
 
 class RealBuilder(builder.Builder):
@@ -25,12 +24,11 @@ class RealBuilder(builder.Builder):
     def __init__(self, rebuild_metadata, pkg_source):
         super(self.__class__, self).__init__(rebuild_metadata, pkg_source)
         self.cl = CoprClient.create_from_file_config()
+        check_metadata(rebuild_metadata)
         self.project = rebuild_metadata['copr_project']
         self.chroots = rebuild_metadata['chroots']
         if self.project_is_new():
             self.cl.create_project(self.project, self.chroots)
-            # TODO try copr.client.exceptions.CoprRequestException: Unknown
-            # arguments passed (non-existing chroot probably)
         
         if 'chroot_pkgs' in rebuild_metadata:
             self.add_chroot_pkg(rebuild_metadata['chroot_pkgs'])
@@ -74,7 +72,7 @@ class RealBuilder(builder.Builder):
         watched = []
         for result in results:
             watched += result.builds_list
-        
+
         watched = set(watched)
         done = {}
 
@@ -84,7 +82,7 @@ class RealBuilder(builder.Builder):
                 if status in ["skipped", "failed", "succeeded"]:
                     done[bw] = status
             time.sleep(1)
-        
+
         pprint.pprint(done)
         for status in done.values():
             if status != 'succeeded':

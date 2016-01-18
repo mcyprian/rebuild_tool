@@ -1,7 +1,10 @@
 import locale
 import os
+import logging
 
 from subprocess import Popen, PIPE, CalledProcessError
+
+logger = logging.getLogger(__name__)
 
 def add_prefix(name, prefix):   #TODO remove prefix functions??
     if prefix in name:
@@ -50,8 +53,6 @@ def edit_bootstrap(spec_file, macro, new_value):
     if bumpspec['returncode']:
         raise CalledProcessError(cmd='rpmdev-bumpspec', returncode=bumpspec['returncode'])
 
-    #TODO log message
-
 def check_bootstrap_macro(spec_file, macro):
     macro_definition = "%global " + macro
     proc_data = subprocess_popen_call(["grep", macro_definition, spec_file])
@@ -59,7 +60,7 @@ def check_bootstrap_macro(spec_file, macro):
         sed_data = subprocess_popen_call(["sed", "-i", '1,1s/^/{0} 1\\n/'.format(
             macro_definition), spec_file])
         if sed_data['returncode']:
-            print(sed_data['stderr'])
+            logger.error(sed_data['stderr'])
             raise CalledProcessError(cmd='sed', returncode=sed_data['returncode'])
 
 def base_name(name):

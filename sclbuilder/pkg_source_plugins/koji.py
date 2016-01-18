@@ -1,6 +1,6 @@
 from collections import UserDict
 
-from sclbuilder.pkg_source import PkgSrcArchive, set_class_attrs
+from sclbuilder.pkg_source import set_class_attrs
 from sclbuilder.pkg_source_plugins.dnf import DnfArchive
 from sclbuilder.utils import ChangeDir, subprocess_popen_call
 from sclbuilder.exceptions import DownloadFailException
@@ -31,5 +31,3 @@ class KojiArchive(DnfArchive):
                 raise DownloadFailException(proc_data['stderr'])
 
         self.srpm_file = self.get_file(".src.rpm")
- 
-        # koji download-build --arch=src --latestfrom=f24-python3 python3

@@ -27,14 +27,14 @@ class RebuildMetadata(UserDict):
 
         for attr in ['build_system', 'packages_source', 'repo', 'packages']:
             if attr not in self:
-                raise IncompleteMetadataException("Missing attribute {}.".format(attr))
+                raise IncompleteMetadataException("Missing Rebuild file attribute: {}.".format(attr))
 
         if self['build_system'] not in available_builder_plugins:
-            raise UnknownPluginException("Builder plugin {} not available.".format(
-                                         self['build_system']))
-        
+            raise UnknownPluginException("Builder plugin: {} specified in Rebuild file not available.".format(
+                self['build_system']))
+
         if self['packages_source'] not in available_pkg_source_plugins:
-            raise UnknownPluginException("Packages source  plugin {} not available.".format(
+            raise UnknownPluginException("Packages source  plugin: {} specified in Rebuild file not available.".format(
                                          self['packages_source']))
 
         if 'metapackage' in self:
@@ -48,9 +48,9 @@ class RebuildMetadata(UserDict):
                 if not isinstance(self[attr], list):
                     self[attr] = [self[attr]]
 
-        if self['packages_source'] == 'koji': 
+        if self['packages_source'] == 'koji':
             if 'koji_tag' not in self:
-                raise IncompleteMetadataException("Missing attribute koji_tag necesary to get srpms from koji.")
+                raise IncompleteMetadataException("Missing Rebuild file attribute: koji_tag necesary to get srpms from koji.")
         else:
             self['koji_tag'] = None
 

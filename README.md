@@ -23,9 +23,9 @@ Usage: mybin.py [OPTIONS] REBUILD_FILE
 
 All data needed to rebuild are specified in this file.
 
-Table of required and optional items of the file:
+Table of required and optional attributes of the file:
     
-    **item**       |**Description**                       |**Available plugins** | **Required**
+    **attribute**       |**Description**                       |**Available plugins** | **Required**
     ---------------|--------------------------------------|----------------------|--------------
     build_system   | system to execute builds             |  copr                |   YES
     packages_source| source of srpms                      |  dnf, koji           |   YES
@@ -73,9 +73,9 @@ Before rebuild using Copr as build system install and configure copr-cli:
     
     http://miroslav.suchy.cz/blog/archives/2013/12/29/how_to_build_in_copr/
 
-Rebuild file items specific for Copr build system:
+Rebuild file attributes specific for Copr build system:
 
-    **item**       |**Description**                       |**Required**
+    **attribute**       |**Description**                       |**Required**
     ---------------|--------------------------------------|-------------------
     copr_project   | copr project will be created if it doesn't exist  | YES
     chroots        | list of chroots                      | YES

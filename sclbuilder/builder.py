@@ -78,9 +78,7 @@ class Builder(metaclass=ABCMeta):
         if not recipe_files:
             self.__recipes = None
         else:
-            self.__recipes = []
-            for recipe in recipe_files:
-                self.__recipes.append(Recipe(recipe))
+            self.__recipes = [Recipe(recipe) for recipe in recipe_files]
 
     def get_relations(self):
         '''
@@ -107,6 +105,9 @@ class Builder(metaclass=ABCMeta):
         '''
         deps = set()
         for pkg in recipe.packages:
+            if not pkg in self.packages:
+                raise KeyError("Package {} from recipe missing in packages list".format(
+                    pkg, recipe))
             deps |= set(self.graph.G.successors(pkg))
 
         if (deps - recipe.packages) <= self.built_packages:

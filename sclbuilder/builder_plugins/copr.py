@@ -1,10 +1,12 @@
 import time
 import pprint
+import logging
 from copr.client import CoprClient
 
 from sclbuilder import builder
 from sclbuilder.exceptions import IncompleteMetadataException
 
+logger = logging.getLogger(__name__)
 
 def check_metadata(rebuild_metadata):
     '''
@@ -65,7 +67,7 @@ class RealBuilder(builder.Builder):
 
         if verbose:
             print("Building {}".format(pkgs))
-       
+        
         for pkg in srpms:
             results.append(self.cl.create_new_build(self.project, pkgs=[pkg],
                                                        chroots=self.chroots))
@@ -83,7 +85,7 @@ class RealBuilder(builder.Builder):
                     done[bw] = status
             time.sleep(1)
 
-        pprint.pprint(done)
+        logger.debug(done)
         for status in done.values():
             if status != 'succeeded':
                 return False

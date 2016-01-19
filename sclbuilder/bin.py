@@ -40,6 +40,7 @@ def main(rebuild_file, visual, analyse):
     # Import of selected builder module
     builder_module = builder_loader.load_plugin(rebuild_metadata['build_system'])
     logger.info("Builder plugin {} loaded.".format(builder_module))
+
     # Import selected pkg_source module and create Container object
     pkg_source_module = pkg_source_loader.load_plugin(rebuild_metadata['packages_source'])
     pkg_source = pkg_source_module.PkgsContainer()
@@ -48,19 +49,23 @@ def main(rebuild_file, visual, analyse):
     try:
         builder = builder_module.RealBuilder(rebuild_metadata, pkg_source)
         builder.get_relations()
-    except (exc.UnknownRepoException, exc.IncompleteMetadataException) as e:
+    except (exc.UnknownRepoException, exc.IncompleteMetadataException, 
+            exc.MissingRecipeException) as e:
         logger.error('Failed and exiting:', exc_info=True)
         logger.info('Rebuild failed.')
         sys.exit(e)
     except CoprNoConfException:
         print("Copr config file ~/.config/copr is missing.", file=sys.stderr)
         sys.exit(1)
+   
     if visual or analyse:
         builder.graph.show()
-    if not analyse:
-        try:
+
+    try:
+        if not analyse:
             builder.run_building()
-        except CoprRequestException as e:
-            logger.error('Failed and exiting:', exc_info=True)
-            logger.info('Rebuild failed.')
-            sys.exit(e)
+            logger.info("Rebuild successfully completed.")
+    except (KeyError, CoprRequestException) as e:
+        logger.error('Failed and exiting:', exc_info=True)
+        logger.info('Rebuild failed.')
+        sys.exit(e)

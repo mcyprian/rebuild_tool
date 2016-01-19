@@ -66,6 +66,25 @@ packages: [gdb,
            python-sqlalchemy]
 ```
 
+## Recipes
+
+If list of packages contains circular dependecies, rebuild tool needs special "Recipe" files to
+resolve them. Recipes are yaml files containing building order and value of bootstrapping macros of each package the in cycle.
+
+Example of recipe file:
+```
+- ['gdb', '_without_python 1']
+- ['python3', 'with_rewheel 0']
+- ['python-setuptools', 'build_wheel 0']
+- ['gdb', '_without_python 0']
+- ['python-pip', 'with_rewheel 0']
+- ['python-wheel']
+- ['python-setuptools', 'build_wheel 1']
+- ['python-pip', 'with_rewheel 1']
+- ['python3', 'with_rewheel 1']
+```
+
+
 ## Builder plugins
 ### Copr
 

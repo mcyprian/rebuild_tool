@@ -106,8 +106,7 @@ class Builder(metaclass=ABCMeta):
         deps = set()
         for pkg in recipe.packages:
             if not pkg in self.packages:
-                raise KeyError("Package {} from recipe missing in packages list".format(
-                    pkg, recipe))
+                raise KeyError("Package {} from recipe missing in packages list".format(pkg))
             deps |= set(self.graph.G.successors(pkg))
 
         if (deps - recipe.packages) <= self.built_packages:
@@ -146,7 +145,8 @@ class Builder(metaclass=ABCMeta):
                 self.build(zero_deps)
             else:
                 for recipe in self.recipes:
-                    if self.recipe_deps_satisfied(recipe):
+                    if next(iter(self.packages - self.built_packages)) in recipe.packages and\
+                        self.recipe_deps_satisfied(recipe):
                         self.build_following_recipe(recipe)
 
     def find_recipe(self, package):

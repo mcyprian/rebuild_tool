@@ -2,6 +2,7 @@ import sys
 import click
 import logging
 import getpass
+import threading
 from copr.client.exceptions import CoprNoConfException, CoprRequestException
 
 from sclbuilder.rebuild_metadata import get_file_data, RebuildMetadata
@@ -58,11 +59,16 @@ def main(rebuild_file, visual, analyse):
         print("Copr config file ~/.config/copr is missing.", file=sys.stderr)
         sys.exit(1)
    
-    if visual or analyse:
-        builder.graph.show()
-
     try:
-        if not analyse:
+        if analyse:
+            builder.graph.show()
+
+        elif visual:
+            t = threading.Thread(target=builder.run_building)
+            t.start()
+            builder.graph.show()
+        
+        else:
             builder.run_building()
             logger.info("Rebuild successfully completed.")
     except (KeyError, CoprRequestException) as e:

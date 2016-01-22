@@ -8,4 +8,4 @@
 .tox
 build/
 dist/
-sclbuilder.egg-info
+rebuild_tool.egg-info

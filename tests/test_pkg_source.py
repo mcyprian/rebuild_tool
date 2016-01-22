@@ -5,8 +5,8 @@ import os
 import shutil
 
 
-from sclbuilder import utils
-from sclbuilder.pkg_source_plugins.dnf import DnfArchive
+from rebuild_tool import utils
+from rebuild_tool.pkg_source_plugins.dnf import DnfArchive
 
 tests_dir = os.path.split(os.path.abspath(__file__))[0]
 

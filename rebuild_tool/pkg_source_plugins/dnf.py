@@ -3,9 +3,9 @@ import logging
 from subprocess import Popen, PIPE, CalledProcessError
 from collections import UserDict
 
-import sclbuilder.exceptions as ex
-from sclbuilder.pkg_source import PkgSrcArchive, set_class_attrs
-from sclbuilder.utils import subprocess_popen_call, ChangeDir
+import rebuild_tool.exceptions as ex
+from rebuild_tool.pkg_source import PkgSrcArchive, set_class_attrs
+from rebuild_tool.utils import subprocess_popen_call, ChangeDir
 
 logger = logging.getLogger(__name__)
 

@@ -5,11 +5,11 @@ import getpass
 import threading
 from copr.client.exceptions import CoprNoConfException, CoprRequestException
 
-from sclbuilder.rebuild_metadata import get_file_data, RebuildMetadata
-from sclbuilder.builder_plugins import builder_loader
-from sclbuilder.pkg_source_plugins import pkg_source_loader
-from sclbuilder.logger import register_file_log_handler
-import sclbuilder.exceptions as exc
+from rebuild_tool.rebuild_metadata import get_file_data, RebuildMetadata
+from rebuild_tool.builder_plugins import builder_loader
+from rebuild_tool.pkg_source_plugins import pkg_source_loader
+from rebuild_tool.logger import register_file_log_handler
+import rebuild_tool.exceptions as exc
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])

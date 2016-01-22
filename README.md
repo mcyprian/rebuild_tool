@@ -1,5 +1,5 @@
 ===================
-sclbuilder
+rebuild_tool
 ===================
 Tool to rebuild lists of packages and Software collections.
 
@@ -45,8 +45,8 @@ chroots: [fedora-rawhide-x86_64]
 packages_source: koji
 
 repo: rawhide-source
-recipes: [/home/mcyprian/Codes/devel/sclbuilder/input_data/recipe1_py35.yml,
-          /home/mcyprian/Codes/devel/sclbuilder/input_data/recipe2_py35.yml]
+recipes: [/home/mcyprian/Codes/devel/rebuild_tool/input_data/recipe1_py35.yml,
+          /home/mcyprian/Codes/devel/rebuild_tool/input_data/recipe2_py35.yml]
 
 packages: [gdb,
            python3,

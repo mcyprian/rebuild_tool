@@ -4,7 +4,7 @@ import re
 from subprocess import CalledProcessError
 from abc import ABCMeta, abstractmethod
 
-from sclbuilder import utils
+from rebuild_tool import utils
 
 def set_class_attrs(add_fce):
     '''

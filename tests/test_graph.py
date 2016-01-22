@@ -1,7 +1,7 @@
 import pytest
 from flexmock import flexmock
 
-from sclbuilder.graph import PackageGraph
+from rebuild_tool.graph import PackageGraph
 
 class TestGraph(object):
     fake_python = flexmock(

@@ -4,10 +4,10 @@ import shutil
 import logging
 from abc import ABCMeta, abstractmethod
 
-from sclbuilder.graph import PackageGraph
-from sclbuilder.rebuild_metadata import Recipe
-from sclbuilder.exceptions import MissingRecipeException, BuildFailureException
-from sclbuilder import utils
+from rebuild_tool.graph import PackageGraph
+from rebuild_tool.rebuild_metadata import Recipe
+from rebuild_tool.exceptions import MissingRecipeException, BuildFailureException
+from rebuild_tool import utils
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class Builder(metaclass=ABCMeta):
     @path.setter
     def path(self, value):
         self.__tempdir = value
-        value += '/sclbuilder-{0}/'.format(self.repo)
+        value += '/rebuild_tool-{0}/'.format(self.repo)
         if not os.path.isdir(value):
             os.makedirs(value)
         self.__path = value

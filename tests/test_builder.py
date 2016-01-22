@@ -4,12 +4,12 @@ import os
 import sys
 from copr.client import CoprClient
 
-from sclbuilder.builder_plugins.copr import RealBuilder
-from sclbuilder.builder import Builder
-from sclbuilder.graph import PackageGraph
-from sclbuilder.pkg_source_plugins.dnf import DnfArchive
-from sclbuilder.exceptions import MissingRecipeException
-from sclbuilder import utils 
+from rebuild_tool.builder_plugins.copr import RealBuilder
+from rebuild_tool.builder import Builder
+from rebuild_tool.graph import PackageGraph
+from rebuild_tool.pkg_source_plugins.dnf import DnfArchive
+from rebuild_tool.exceptions import MissingRecipeException
+from rebuild_tool import utils 
 
 tests_dir = os.path.split(os.path.abspath(__file__))[0]
 

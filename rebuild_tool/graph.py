@@ -4,8 +4,8 @@ import itertools
 import pprint
 import logging
 
-from sclbuilder.utils import subprocess_popen_call
-import sclbuilder.exceptions as ex
+from rebuild_tool.utils import subprocess_popen_call
+import rebuild_tool.exceptions as ex
 
 logger = logging.getLogger(__name__)
 

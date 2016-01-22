@@ -3,8 +3,8 @@ import pprint
 import logging
 from copr.client import CoprClient
 
-from sclbuilder import builder
-from sclbuilder.exceptions import IncompleteMetadataException
+from rebuild_tool import builder
+from rebuild_tool.exceptions import IncompleteMetadataException
 
 logger = logging.getLogger(__name__)
 

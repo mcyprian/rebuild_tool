@@ -21,16 +21,16 @@ description = "Tool to plan order of packages building in Software Collections"
 "and makes visualization of the relations between them."
 
 setup(
-    name='sclbuilder',
+    name='rebuild_tool',
     version='1.0.0',
     description='Plans order of packages building in scl creation',
     long_description=description,
     keywords='rhscl, build',
     author='Michal Cyprian',
     author_email='mcyprian@redhat.com',
-    url='https://github.com/mcyprian/sclbuilder',
+    url='https://github.com/mcyprian/rebuild_tool',
     license='MIT',
-    packages=['sclbuilder', ],
+    packages=['rebuild_tool', ],
     install_requires=['click',
                       'networkx',
                       'matplotlib',

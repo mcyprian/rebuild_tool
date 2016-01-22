@@ -1,9 +1,9 @@
 from collections import UserDict
 
-from sclbuilder.pkg_source import set_class_attrs
-from sclbuilder.pkg_source_plugins.dnf import DnfArchive
-from sclbuilder.utils import ChangeDir, subprocess_popen_call
-from sclbuilder.exceptions import DownloadFailException
+from rebuild_tool.pkg_source import set_class_attrs
+from rebuild_tool.pkg_source_plugins.dnf import DnfArchive
+from rebuild_tool.utils import ChangeDir, subprocess_popen_call
+from rebuild_tool.exceptions import DownloadFailException
 
 class PkgsContainer(UserDict):
     @set_class_attrs

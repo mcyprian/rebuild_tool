@@ -1,7 +1,7 @@
 import logging
 import os
 
-logger = logging.getLogger('sclbuilder')
+logger = logging.getLogger('rebuild_tool')
 logger.setLevel(logging.DEBUG)
 
 file_formatter = logging.Formatter(u'%(name)s::%(levelname)s::%(message)s')

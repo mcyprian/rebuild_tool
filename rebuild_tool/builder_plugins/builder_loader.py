@@ -3,4 +3,4 @@ import importlib
 available_builder_plugins = ['copr']
 
 def load_plugin(name):
-    return importlib.import_module('sclbuilder.builder_plugins.' + name)
+    return importlib.import_module('rebuild_tool.builder_plugins.' + name)

@@ -1,9 +1,9 @@
 import yaml
 from collections import UserDict
 
-from sclbuilder.exceptions import IncompleteMetadataException, UnknownPluginException
-from sclbuilder.builder_plugins.builder_loader import available_builder_plugins
-from sclbuilder.pkg_source_plugins.pkg_source_loader import available_pkg_source_plugins
+from rebuild_tool.exceptions import IncompleteMetadataException, UnknownPluginException
+from rebuild_tool.builder_plugins.builder_loader import available_builder_plugins
+from rebuild_tool.pkg_source_plugins.pkg_source_loader import available_pkg_source_plugins
 
 def get_file_data(input_file, split=False):
     '''

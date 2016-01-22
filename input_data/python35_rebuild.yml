@@ -6,8 +6,8 @@ packages_source: koji
 
 repo: rawhide-source
 koji_tag: f24-python3
-recipes: [/home/mcyprian/Codes/devel/sclbuilder/input_data/recipe1_py35.yml,
-          /home/mcyprian/Codes/devel/sclbuilder/input_data/recipe2_py35.yml]
+recipes: [/home/mcyprian/Codes/devel/rebuild_tool/input_data/recipe1_py35.yml,
+          /home/mcyprian/Codes/devel/rebuild_tool/input_data/recipe2_py35.yml]
 
 packages: [gdb,
            python3,

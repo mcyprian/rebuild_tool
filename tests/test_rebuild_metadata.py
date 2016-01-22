@@ -2,8 +2,8 @@ import pytest
 import sys
 import os
 
-from sclbuilder import rebuild_metadata
-from sclbuilder.exceptions import IncompleteMetadataException, UnknownPluginException
+from rebuild_tool import rebuild_metadata
+from rebuild_tool.exceptions import IncompleteMetadataException, UnknownPluginException
 
 tests_dir = os.path.split(os.path.abspath(__file__))[0]
 

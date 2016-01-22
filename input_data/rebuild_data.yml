@@ -1,12 +1,12 @@
 build_system: copr
-copr_project: sclbuilder-test3
+copr_project: rebuild_tool-test3
 chroots: [fedora-23-x86_64]
 
 packages_source: dnf
 
 repo: rhscl-rh-python34-epel-7-x86_64
-recipes: [/home/mcyprian/Codes/devel/sclbuilder/input_data/recipe1.yml,
-           /home/mcyprian/Codes/devel/sclbuilder/input_data/recipe2.yml]
+recipes: [/home/mcyprian/Codes/devel/rebuild_tool/input_data/recipe1.yml,
+           /home/mcyprian/Codes/devel/rebuild_tool/input_data/recipe2.yml]
 
 prefix: rh-python34-
 metapackage: rh-python34

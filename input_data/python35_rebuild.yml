@@ -1,7 +1,4 @@
-build_system: copr
-copr_project: python35-rebuild2
-chroots: [fedora-rawhide-x86_64]
-
+build_system: printer
 packages_source: koji
 
 repo: rawhide-source

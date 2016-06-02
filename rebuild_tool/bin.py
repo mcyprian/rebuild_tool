@@ -3,7 +3,7 @@ import click
 import logging
 import getpass
 import threading
-from copr.client.exceptions import CoprNoConfException, CoprRequestException
+from copr.exceptions import CoprNoConfException, CoprRequestException
 
 from rebuild_tool.rebuild_metadata import get_file_data, RebuildMetadata
 from rebuild_tool.builder_plugins import builder_loader
@@ -14,6 +14,7 @@ import rebuild_tool.exceptions as exc
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('rebuild_file', nargs=1)
 @click.option('--visual / --no-visual',
@@ -23,7 +24,6 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               is_flag=True,
               help='Analyse relations between packages and print circular '
               'dependencies, disable execution of builds')
-
 def main(rebuild_file, visual, analyse):
     register_file_log_handler('/tmp/sclbulider-{0}.log'.format(getpass.getuser()))
 
@@ -50,7 +50,7 @@ def main(rebuild_file, visual, analyse):
     try:
         builder = builder_module.RealBuilder(rebuild_metadata, pkg_source)
         builder.get_relations()
-    except (exc.UnknownRepoException, exc.IncompleteMetadataException, 
+    except (exc.UnknownRepoException, exc.IncompleteMetadataException,
             exc.MissingRecipeException) as e:
         logger.error('Failed and exiting:', exc_info=True)
         logger.info('Rebuild failed.')
@@ -58,7 +58,7 @@ def main(rebuild_file, visual, analyse):
     except CoprNoConfException:
         print("Copr config file ~/.config/copr is missing.", file=sys.stderr)
         sys.exit(1)
-   
+
     try:
         if analyse:
             builder.graph.show()
@@ -67,7 +67,7 @@ def main(rebuild_file, visual, analyse):
             t = threading.Thread(target=builder.run_building)
             t.start()
             builder.graph.show()
-        
+
         else:
             builder.run_building()
             logger.info("Rebuild successfully completed.")

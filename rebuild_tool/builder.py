@@ -1,4 +1,5 @@
 import os
+import sys
 import tempfile
 import shutil
 import logging
@@ -11,17 +12,19 @@ from rebuild_tool import utils
 
 logger = logging.getLogger(__name__)
 
+
 def check_build(build_fce):
     '''
     Decorator to check if build was successfull or not,
     updates attributes and removes package from graph
     '''
+
     def inner(self, pkgs, verbose=True):
         if not isinstance(pkgs, list):
             pkgs = [pkgs]
         if build_fce(self, pkgs, verbose):
             for pkg in pkgs:
-                if verbose: # not building recipe
+                if verbose:  # not building recipe
                     self.graph.G.remove_node(pkg)
                 self.built_packages.add(pkg)
             return True
@@ -34,6 +37,7 @@ class Builder(metaclass=ABCMeta):
     '''
     Abstract superclass of builder classes.
     '''
+
     def __init__(self, rebuild_metadata, pkg_source):
         self.pkg_source = pkg_source
         self.packages = set(rebuild_metadata['packages'])
@@ -87,7 +91,8 @@ class Builder(metaclass=ABCMeta):
         self.graph.make_graph()
         self.circular_deps = self.graph.get_cycles()
         if self.circular_deps and not self.recipes:
-            raise MissingRecipeException("Missing recipes to resolve circular dependencies in graph.")
+            raise MissingRecipeException(
+                "Missing recipes to resolve circular dependencies in graph.")
 
     def deps_satisfied(self, package):
         '''
@@ -113,20 +118,12 @@ class Builder(metaclass=ABCMeta):
             return True
         return False
 
-    @abstractmethod
-    def add_chroot_pkg(self, chroot_pkgs):
-        '''
-        Method to add packages to minimal buildroot
-        '''
-        pass
-
     @check_build
     def build(self, pkgs, verbose=True):
         for pkg in pkgs:
             if verbose:
                 print("Building {0}...".format(pkg))
         return True
-
 
     def run_building(self):
         '''
@@ -145,9 +142,13 @@ class Builder(metaclass=ABCMeta):
                 self.build(zero_deps)
             else:
                 for recipe in self.recipes:
-                    if next(iter(self.packages - self.built_packages)) in recipe.packages and\
-                        self.recipe_deps_satisfied(recipe):
+                    if list(self.packages - self.built_packages)[1] in recipe.packages and\
+                            self.recipe_deps_satisfied(recipe):
                         self.build_following_recipe(recipe)
+                        break
+                else:
+                    sys.stderr.write("Recipe to resolve circular dependencies not found.\n")
+                    raise SystemExit(1)
 
     def find_recipe(self, package):
         '''

@@ -1,4 +1,4 @@
-===================
+
 rebuild_tool
 ===================
 Tool to rebuild lists of packages and Software collections.
